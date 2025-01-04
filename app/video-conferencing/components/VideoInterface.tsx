@@ -12,15 +12,20 @@ import { useRouter } from 'next/navigation';
 import { generalHelpers } from '@/helpers';
 import { StreamPlayer } from './StreamPlayer';
 
-export default function VideoInterface({ allowMicrophoneAndCamera }: { allowMicrophoneAndCamera: boolean }) {
+export default function VideoInterface({ allowMicrophoneAndCamera, channelName }: { allowMicrophoneAndCamera: boolean, channelName: string; }) {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [handleSelectMicrophone, setHandleSelectMicrophone] = useState(false);
   const [username, setUsername] = useState("")
-  const { isAudioOn, isVideoOn, toggleAudio, toggleVideo, localUserTrack, options } = useVideoConferencing();
+  const { isAudioOn, stage, isVideoOn, toggleAudio, toggleVideo, localUserTrack, options, handleJoin } = useVideoConferencing();
   const router = useRouter()
-
-  const handleGoLive = () => {
-    router.push(`/video-conferencing/call/channel-name?username=${generalHelpers.convertToSlug(username)}`);
+  console.group({ stage })
+  const handleGoLive = async () => {
+    try {
+      await handleJoin()
+      router.push(`/video-conferencing/call/${channelName}?username=${generalHelpers.convertToSlug(username)}`);
+    } catch (error: any) {
+      console.error(error);
+    }
   };
 
   return (

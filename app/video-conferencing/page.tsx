@@ -5,24 +5,50 @@ import { Button } from '@/components/Button'
 import { useVideoConferencing, VideoConferencingProvider } from '@/context/VideoConferencingContext'
 import { TeamPeople } from '@/public/assets'
 import { Check, Plus } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import React, { useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import React, { useEffect, useRef, useState } from 'react'
 import Input from '@/components/ui/Input'
+import AgoraRTM, { RtmChannel, RtmClient } from "agora-rtm-sdk";
+import AgoraRTC, { IAgoraRTCClient } from 'agora-rtc-sdk-ng';
+import { UID } from "agora-rtc-react";
+import { agoraGetAppData } from '@/lib';
 
+let rtcClient: IAgoraRTCClient;
+let rtmClient: RtmClient;
+let rtmChannel: RtmChannel;
+let rtcScreenShareClient: IAgoraRTCClient;
+interface Options {
+  appid?: string | undefined;
+  channel?: string;
+  rtcToken?: string | null;
+  rtmToken?: string | null;
+  uid?: UID | null;
+  audienceLatency: number;
+  role: string;
+  proxyMode?: string;
+  certificate?: string;
+}
 
 export default function VideoConferencing() {
   const router = useRouter();
-  const { setStep } = useVideoConferencing();
+  const { setStage, setChannelName, channelName } = useVideoConferencing();
   const [handleJoinMeeting, setHandleJoinMeeting] = useState(false)
   const [handleCreateMeeting, setHandleCreateMeeting] = useState(false)
 
   const handleCreate = () => {
-    router.push('/video-conferencing/waiting-room');
+    router.push(`/video-conferencing/waiting-room?channelName=${channelName}`);
   };
 
-  const handleJoin = () => {
-    setStep(1);
+  const openJoinModal = () => {
     setHandleJoinMeeting(!handleJoinMeeting)
+  }
+
+  const handleJoinWaitingRoom = async () => {
+    try {
+      router.push(`/video-conferencing/waiting-room?channelName=${channelName}`);
+    } catch (error: any) {
+      console.error(error);
+    }
   };
 
   const handleJCreate = () => {
@@ -32,7 +58,6 @@ export default function VideoConferencing() {
   const handleScheduleWithCalendar = () => {
     router.push('/video-conferencing/schedule');
   }
-
 
   return (
     <div className='flex flex-col items-center justify-center md:h-[88vh] h-[85vh] bg-white'>
@@ -77,10 +102,9 @@ export default function VideoConferencing() {
                 </motion.div>
               )}
             </AnimatePresence>
-
           </div>
           <div className='w-full mt-3 relative'>
-            <Button className='w-full' variant="outline" onClick={handleJoin}>
+            <Button className='w-full' variant="outline" onClick={openJoinModal}>
               <Plus className='w-4 mr-4' />
               Join Video Conferencing
             </Button>
@@ -94,8 +118,8 @@ export default function VideoConferencing() {
                   className='overflow-hidden w-full rounded-md shadow-lg mt-4 border border-gray-100 absolute top-8 left-0 z-60'
                 >
                   <div className='p-2 bg-white'>
-                    <Input placeholder='Enter the meeting code here' />
-                    <Button className='w-1/4 mt-2'>
+                    <Input placeholder='Enter the meeting code here' value={channelName} onChange={(e) => setChannelName(e.target.value)} />
+                    <Button className='w-1/4 mt-2' onClick={handleJoinWaitingRoom}>
                       Join
                     </Button>
                   </div>

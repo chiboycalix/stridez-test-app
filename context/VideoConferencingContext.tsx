@@ -1,8 +1,6 @@
 "use client"
 import { ILocalTrack, Options } from '@/types';
 import { createContext, useContext, useState, ReactNode, useEffect, useLayoutEffect, useRef } from 'react';
-import AgoraRTM from "agora-rtm-sdk";
-import AgoraRTC from "agora-rtc-sdk-ng";
 import { agoraGetAppData } from '@/lib';
 import {
   ICameraVideoTrack,
@@ -12,6 +10,9 @@ import {
   IRemoteAudioTrack,
   IRemoteVideoTrack,
 } from "agora-rtc-sdk-ng";
+import AgoraRTM, { RtmChannel, RtmClient } from "agora-rtm-sdk";
+import AgoraRTC, { IAgoraRTCClient } from 'agora-rtc-sdk-ng';
+import { useRouter } from 'next/navigation';
 
 interface VideoConferencingContextContextType {
   step: number;
@@ -35,7 +36,19 @@ interface VideoConferencingContextContextType {
   isScreenSharing: boolean;
   toggleScreenShare: () => Promise<void>;
   screenShareRef: React.RefObject<HTMLDivElement>;
+  createTrackAndPublish: () => void;
+  handleJoin: () => void;
+  setStage: (stage: string) => void;
+  setChannelName: (stage: string) => void;
+  channelName: string;
+  stage: string;
 }
+
+let rtcClient: IAgoraRTCClient;
+let rtmClient: RtmClient;
+let rtmChannel: RtmChannel;
+let rtcScreenShareClient: IAgoraRTCClient;
+
 
 const VideoConferencingContext = createContext<VideoConferencingContextContextType | undefined>(undefined);
 
@@ -48,12 +61,20 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const [hasPermissions, setHasPermissions] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const screenShareRef = useRef<HTMLDivElement>(null) as any;
-
+  const [joinRoom, setJoinRoom] = useState(false);
+  const [stage, setStage] = useState("prepRoom");
+  const [showStepJoinSuccess, setShowStepJoinSuccess] = useState(false);
+  const [joinDisabled, setJoinDisabled] = useState(false);
+  const [leaveDisabled, setLeaveDisabled] = useState(true);
+  const [remoteUsers, setRemoteUsers] = useState<Record<string, any>>({});
+  const remoteUsersRef = useRef(remoteUsers);
+  const username = "testuser"
+  const [channelName, setChannelName] = useState("")
+  const router = useRouter()
   const [localUserTrack, setLocalUserTrack] = useState<ILocalTrack | undefined | any>(
     undefined
   );
   const videoRef = useRef<HTMLVideoElement | null>(null);
-
 
   const [options, setOptions] = useState<Options>({
     channel: "",
@@ -275,6 +296,260 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   };
 
+  useEffect(() => {
+    remoteUsersRef.current = remoteUsers;
+  }, [remoteUsers]);
+
+  useEffect(() => {
+    if (channelName && username) {
+      const fetchAgoraData = async () => {
+        try {
+          const { rtcOptions, rtmOptions } = await agoraGetAppData(channelName);
+
+          setOptions((prev) => ({
+            ...prev,
+            appid: rtcOptions.appId,
+            rtcToken: rtcOptions.token.tokenWithUid,
+            rtmToken: rtmOptions.token,
+            certificate: rtcOptions.appCertificate,
+            uid: rtcOptions.uid,
+            channel: rtcOptions.channelName,
+          }));
+        } catch (error) {
+          console.error("Error fetching Agora data:", error);
+        }
+      };
+
+      fetchAgoraData();
+
+
+      fetchAgoraData();
+      setJoinDisabled(false);
+    }
+  }, [channelName, username]);
+
+  const handleMemberJoined = async (MemberId: string) => {
+    const { name, userRtcUid, userAvatar } =
+      await rtmClient.getUserAttributesByKeys(MemberId, [
+        "name",
+        "userRtcUid",
+      ]);
+    console.log("rtm clients........", name, userRtcUid, userAvatar);
+  };
+
+  const initRtm = async (name: string) => {
+    rtmClient = AgoraRTM.createInstance(options.appid!);
+    console.log("checking for error before...", rtmClient);
+    await rtmClient.login({
+      uid: String(options.uid!),
+      token: options.rtmToken!,
+    });
+    console.log("checking for error after login...", rtmClient);
+
+    const channel = rtmClient.createChannel(options.channel!);
+    rtmChannel = channel;
+    await channel.join();
+
+    await rtmClient.addOrUpdateLocalUserAttributes({
+      name: name,
+      userRtcUid: String(options.uid!),
+      // userAvatar: avatar,
+    });
+
+    getChannelMembers();
+
+    window.addEventListener("beforeunload", leaveRtmChannel);
+
+    channel.on("MemberJoined", handleMemberJoined);
+    channel.on("MemberLeft", handleMemberLeft);
+    channel.on("ChannelMessage", async ({ text }: any) => {
+      console.log("muter is called");
+      const message = JSON.parse(text);
+      if (message.command === "mute-microphone" && options.uid == message.uid) {
+        console.log("muter is disabling here.. ");
+        if (
+          localUserTrack?.audioTrack?.enabled ||
+          localUserTrack?.videoTrack?.enabled
+        ) {
+          await localUserTrack?.audioTrack!.setEnabled(false);
+          await localUserTrack?.videoTrack!.setEnabled(false);
+        }
+      } else if (
+        message.command === "unmute-microphone" &&
+        options.uid == message.uid
+      ) {
+        if (
+          !localUserTrack?.audioTrack?.enabled ||
+          !localUserTrack?.videoTrack?.enabled
+        ) {
+          console.log("muter is enabling here.... ");
+          await localUserTrack?.audioTrack!.setEnabled(true);
+          await localUserTrack?.videoTrack!.setEnabled(true);
+        }
+      }
+    });
+  };
+
+  const subscribe = async (user: any, mediaType: "audio" | "video") => {
+    await rtcClient.subscribe(user, mediaType);
+
+    const uid = String(user.uid);
+    if (mediaType === "video") {
+      const videoTrack = user.videoTrack;
+      setRemoteUsers((prevUsers) => ({
+        ...prevUsers,
+        [uid]: {
+          ...prevUsers[uid],
+          videoTrack,
+        },
+      }));
+    }
+    if (mediaType === "audio") {
+      const audioTrack = user.audioTrack;
+      audioTrack.play();
+    }
+  };
+
+  const handleUserPublished = (user: any, mediaType: "audio" | "video") => {
+    subscribe(user, mediaType);
+  };
+
+  const handleUserUnpublished = (user: any, mediaType: "audio" | "video") => {
+    console.log("Checking if this event was called.........", remoteUsers);
+
+    const uid = String(user.uid);
+    setRemoteUsers((prevUsers) => ({
+      ...prevUsers,
+      [uid]: {
+        ...prevUsers[uid],
+        [mediaType]: null, // Indicate muted state
+      },
+    }));
+  };
+
+  const join = async () => {
+    rtcClient = AgoraRTC.createClient({
+      mode: "live",
+      codec: "vp8",
+    });
+
+    rtcClient.on("user-published", handleUserPublished);
+    rtcClient.on("user-unpublished", handleUserUnpublished);
+    rtcClient.on("user-left", handleUserLeft);
+
+    const mode = options?.proxyMode ?? 0;
+    if (mode !== 0 && !isNaN(parseInt(mode))) {
+      rtcClient.startProxyServer(parseInt(mode));
+    }
+
+    if (options.role === "audience") {
+      rtcClient.setClientRole(options.role, { level: options.audienceLatency });
+      // add event listener to play remote tracks when remote user publishs.
+    } else if (options.role === "host") {
+      rtcClient.setClientRole(options.role);
+    }
+
+    options.uid = await rtcClient.join(
+      options.appid || "",
+      options.channel || "",
+      options.rtcToken || null,
+      options.uid || null
+    );
+
+    // await joinRtcScreenShare();
+    await initRtm(username!);
+  };
+
+  const createTrackAndPublish = async () => {
+    if (
+      localUserTrack &&
+      localUserTrack.audioTrack &&
+      localUserTrack.videoTrack
+    ) {
+      await rtcClient.publish([
+        localUserTrack.audioTrack,
+        localUserTrack.videoTrack,
+      ]);
+    }
+  };
+
+  const handleUserLeft = async (user: any) => {
+    const uid = String(user.uid);
+    const updatedUsers = { ...remoteUsersRef.current };
+    delete updatedUsers[uid];
+    remoteUsersRef.current = updatedUsers;
+    setRemoteUsers(updatedUsers);
+  };
+
+  const leaveRtmChannel = async () => {
+    await rtmChannel.leave();
+    await rtmClient.logout();
+    (rtmChannel as any) = null;
+  };
+
+  const getChannelMembers = async () => {
+    const members = await rtmChannel.getMembers();
+
+    for (let i = 0; members.length > i; i++) {
+      console.log("showing members...", members);
+      const { name, userRtcUid, userAvatar } =
+        await rtmClient!.getUserAttributesByKeys(members[i], [
+          "name",
+          "userRtcUid",
+          // "userAvatar",
+        ]);
+
+      console.log("rtm clients........", name, userRtcUid, userAvatar);
+    }
+  };
+
+  const handleMemberLeft = async () => {
+    // document.getElementById(MemberId).remove();
+  };
+
+  const handleJoin = async () => {
+    console.log("options before:", options);
+    try {
+      if (!options) return;
+
+      console.log("options finally:", options);
+      setJoinRoom(true);
+      setStage("joinRoom");
+      await join();
+      setOptions(options);
+      setShowStepJoinSuccess(true);
+
+      setJoinDisabled(true);
+      setLeaveDisabled(false);
+      await createTrackAndPublish();
+    } catch (error: any) {
+      console.error(error);
+    }
+
+  };
+
+  const leave = async () => {
+    if (localUserTrack) {
+      console.log("yes they is local user and it's beomg removed...");
+      localUserTrack.audioTrack?.close();
+      localUserTrack?.audioTrack?.stop();
+
+      localUserTrack.videoTrack?.close();
+      localUserTrack.videoTrack?.stop();
+      setLocalUserTrack({
+        videoTrack: null as any,
+        audioTrack: null as any,
+        screenTrack: null,
+      });
+    }
+
+    setRemoteUsers({});
+    await rtcClient.unpublish();
+    await rtcClient.leave();
+
+    leaveRtmChannel();
+  };
+
   useLayoutEffect(() => {
     if (videoRef.current !== null && localUserTrack && localUserTrack.videoTrack) {
       localUserTrack.videoTrack.play(videoRef.current, options);
@@ -320,7 +595,13 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         handleDismissPermissions,
         isScreenSharing,
         toggleScreenShare,
-        screenShareRef
+        screenShareRef,
+        handleJoin,
+        createTrackAndPublish,
+        setStage,
+        stage,
+        setChannelName,
+        channelName
       }}>
       {children}
     </VideoConferencingContext.Provider>
