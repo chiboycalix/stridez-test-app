@@ -2,21 +2,15 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image'
 import { Button } from '@/components/Button'
-import { useVideoConferencing, VideoConferencingProvider } from '@/context/VideoConferencingContext'
+import { useVideoConferencing } from '@/context/VideoConferencingContext'
 import { TeamPeople } from '@/public/assets'
 import { Check, Plus } from 'lucide-react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import React, { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import React, { useState } from 'react'
 import Input from '@/components/ui/Input'
-import AgoraRTM, { RtmChannel, RtmClient } from "agora-rtm-sdk";
-import AgoraRTC, { IAgoraRTCClient } from 'agora-rtc-sdk-ng';
-import { UID } from "agora-rtc-react";
-import { agoraGetAppData } from '@/lib';
 
-let rtcClient: IAgoraRTCClient;
-let rtmClient: RtmClient;
-let rtmChannel: RtmChannel;
-let rtcScreenShareClient: IAgoraRTCClient;
+import { UID } from "agora-rtc-react";
+
 interface Options {
   appid?: string | undefined;
   channel?: string;
@@ -31,12 +25,12 @@ interface Options {
 
 export default function VideoConferencing() {
   const router = useRouter();
-  const { setStage, setChannelName, channelName } = useVideoConferencing();
+  const { setStage, setChannelName, channelName, setUsername, username } = useVideoConferencing();
   const [handleJoinMeeting, setHandleJoinMeeting] = useState(false)
   const [handleCreateMeeting, setHandleCreateMeeting] = useState(false)
 
   const handleCreate = () => {
-    router.push(`/video-conferencing/waiting-room?channelName=${channelName}`);
+    // router.push(`/video-conferencing/waiting-room?channelName=${channelName}`);
   };
 
   const openJoinModal = () => {
@@ -45,7 +39,7 @@ export default function VideoConferencing() {
 
   const handleJoinWaitingRoom = async () => {
     try {
-      router.push(`/video-conferencing/waiting-room?channelName=${channelName}`);
+      router.push(`/video-conferencing/waiting-room/${channelName}`);
     } catch (error: any) {
       console.error(error);
     }

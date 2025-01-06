@@ -22,6 +22,7 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
 }) => {
 
   const { videoRef, isVideoOn } = useVideoConferencing();
+
   useEffect(() => {
     if (videoTrack && videoRef.current && isVideoOn) {
       videoTrack.play(videoRef.current);
@@ -32,7 +33,7 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
         videoTrack.stop();
       }
     };
-  }, [videoTrack, isVideoOn]);
+  }, [videoTrack, isVideoOn, videoRef]);
 
   return (
     <div className="w-full h-full">

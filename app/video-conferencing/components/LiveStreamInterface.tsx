@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client"
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import IconButton from './IconButton';
 import Input from '@/components/ui/Input';
@@ -16,12 +16,10 @@ import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ParticipantsList, ParticipantVideo } from './ParticipantVideo';
 import { useVideoConferencing } from '@/context/VideoConferencingContext';
 import { useSearchParams } from 'next/navigation';
 import { generalHelpers } from '@/helpers';
 import { StreamPlayer } from './StreamPlayer';
-import { ScreenShareDisplay } from './ScreenShareDisplay';
 
 type User = {
   id: string;
@@ -362,35 +360,11 @@ const InvitePeopleTab = () => {
   );
 };
 
-type Participant = {
-  id: string;
-  name: string;
-  isHost?: boolean;
-  isSpeaking?: boolean;
-  isMuted?: boolean;
-  hasVideo?: boolean;
-  isScreenSharing?: boolean;
-};
 
 type JoinRequest = {
   id: string;
   name: string;
 };
-
-const participants: Participant[] = [
-  { id: '1', name: 'Ore Aisha', isHost: true, isSpeaking: true },
-  // { id: '2', name: 'John Doe', isMuted: true },
-  // { id: '3', name: 'Sarah Johnson', isScreenSharing: true },
-  // { id: '4', name: 'Mike Wilson', isMuted: true },
-  // { id: '5', name: 'Emma Brown', isSpeaking: true },
-  // { id: '6', name: 'Alex Lee', isMuted: true },
-  // { id: '7', name: 'Lisa Chen', isMuted: true },
-  // { id: '8', name: 'Tom Harris' },
-  // { id: '9', name: 'Rachel Green' },
-  // { id: '10', name: 'David Ross' },
-  // { id: '11', name: 'Maria Garcia' },
-  // { id: '12', name: 'Kevin Patel' }
-];
 
 const LiveStreamInterface = () => {
   const [showInviteModal, setShowInviteModal] = useState(true);
@@ -403,25 +377,18 @@ const LiveStreamInterface = () => {
   const [emojiAnchorRect, setEmojiAnchorRect] = useState<DOMRect | null>(null);
   const [showVolumePopup, setShowVolumePopup] = useState(false);
   const [volumeAnchorRect, setVolumeAnchorRect] = useState<DOMRect | null>(null);
-  const [screenStream, setScreenStream] = useState(null);
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [error, setError] = useState(null) as any;
   const [isParticipantListOpen, setIsParticipantListOpen] = useState(false);
-  const { isAudioOn, isVideoOn, cleanupTracks, toggleScreenShare, isScreenSharing, toggleAudio, toggleVideo, localUserTrack, handleConfigureWaitingArea, options } = useVideoConferencing();
+  const { isAudioOn, videoRef, setJoinRoom, setStage, remoteUsersRef, isVideoOn, remoteUsers, stage, joinRoom, toggleScreenShare, isScreenSharing, toggleAudio, toggleVideo, localUserTrack, handleConfigureWaitingArea, options } = useVideoConferencing();
 
   const searchParams = useSearchParams();
   const username = searchParams.get("username");
-
-  const videoRef = React.useRef(null) as any;
 
   const newRequest = {
     id: 'unique-id',
     name: 'Matthew'
   } as any;
 
-  const mainGridParticipants = participants.slice(0, 9);
-  const additionalParticipants = participants.slice(9);
 
   useEffect(() => {
     if (newRequest) {
@@ -429,13 +396,16 @@ const LiveStreamInterface = () => {
     }
   }, []);
 
+  // useEffect(() => {
+  //   remoteUsersRef.current = remoteUsers;
+  // }, [remoteUsers]);
+
+
   useEffect(() => {
     handleConfigureWaitingArea();
-    return () => {
-      cleanupTracks()
-    };
+    setStage("joinRoom")
+    setJoinRoom(true);
   }, []);
-
 
   const handleAllow = (requesterId: string) => {
     console.log('Allowing user:', requesterId);
@@ -451,22 +421,6 @@ const LiveStreamInterface = () => {
     );
   };
 
-  const handleStreamCaptured = useCallback((stream: any) => {
-    setScreenStream(stream);
-
-    // Set the stream as the video source
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-    }
-
-    // Handle stream end
-    stream.getVideoTracks()[0].addEventListener('ended', () => {
-      setScreenStream(null);
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-    });
-  }, []);
 
   const handleVolumeControlClick = (event: React.MouseEvent<HTMLDivElement>) => {
     const buttonRect = event.currentTarget.getBoundingClientRect();
@@ -501,46 +455,10 @@ const LiveStreamInterface = () => {
     console.log('Selected emoji:', emoji);
   };
 
-  const startScreenShare = useCallback(async () => {
-    try {
-      const displayMediaOptions = {
-        video: {
-          cursor: "always",
-          displaySurface: selectedOption === 'chrome-tab' ? 'browser' :
-            selectedOption === 'window' ? 'window' : 'monitor'
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100
-        }
-      };
-
-      const stream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
-
-      stream.getVideoTracks()[0].addEventListener('ended', () => {
-        console.log('Screen sharing ended');
-      });
-
-      handleStreamCaptured(stream);
-
-    } catch (err: any) {
-      console.error('Error starting screen share:', err);
-      setError(err.message);
-      if (err.name === 'NotAllowedError') {
-        setError('Permission denied. Please allow screen sharing to continue.');
-      } else if (err.name === 'NotFoundError') {
-        setError('No screen sharing device found.');
-      } else {
-        setError('An error occurred while trying to share the screen.');
-      }
-    }
-  }, [selectedOption, handleStreamCaptured]);
-
+  console.log({ stage, remoteUsers, joinRoom })
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[150] bg-white">
       <div className="w-full h-full flex flex-col max-w-[1440px] mx-auto p-2 md:p-4 lg:p-6">
-
         {/* Top Bar */}
         <div className="flex items-center justify-between mb-2 md:mb-4">
           <div className="w-6 md:w-8 lg:w-12" />
@@ -566,53 +484,24 @@ const LiveStreamInterface = () => {
             <EndCallScreen />
           ) : (
             <>
-              {
-                participants.length === 1 ?
-                  <div className="text-white flex h-full">
-                    {/* Left Side */}
-                    <div className="w-8 md:w-12 lg:w-28 flex flex-col justify-end p-2">
-                      <span className="text-xs md:text-sm lg:text-base">{generalHelpers.convertFromSlug(username!)}</span>
-                    </div>
+              <div className="text-white flex h-full">
+                {/* Left Side */}
+                <div className="w-8 md:w-12 lg:w-28 flex flex-col justify-end p-2">
+                  <span className="text-xs md:text-sm lg:text-base">{generalHelpers.convertFromSlug(username!)}</span>
+                </div>
 
-                    {/* Center - Video */}
-                    <div className="flex-1">
-                      <div className="relative h-full">
-                        <StreamPlayer
-                          videoTrack={localUserTrack?.videoTrack || null}
-                          audioTrack={localUserTrack?.audioTrack || null}
-                          uid={options?.uid || ""}
-                        />
-                        {isScreenSharing && (
-                          <div className="relative w-full h-3/4">
-                            <ScreenShareDisplay />
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                {/* Center - Video */}
+                <div className="flex-1">
+                  <div className="relative h-full">
+                    <StreamPlayer
+                      videoTrack={localUserTrack?.videoTrack || null}
+                      audioTrack={localUserTrack?.audioTrack || null}
+                      uid={options?.uid || ""}
+                    />
+                  </div>
 
-                    {/* Right Side */}
-                    <div className="w-8 md:w-12 lg:w-28 flex flex-col justify-between items-end p-2">
-                      <div
-                        className="cursor-pointer hover:bg-gray-800/50 p-1 md:p-1.5 lg:p-2 rounded-lg transition-colors"
-                      >
-                        {isAudioOn ?
-                          <Mic className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" /> :
-                          <MicOff className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
-                        }
-                      </div>
-                      <div
-                        onClick={handleVolumeControlClick}
-                        className={cn(
-                          "cursor-pointer hover:bg-gray-800/50 p-1 md:p-1.5 lg:p-2 rounded-lg transition-colors",
-                          showVolumePopup && "bg-gray-800/50"
-                        )}
-                      >
-                        <MoreVertical className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
-                      </div>
-                    </div>
-                  </div> :
                   <div className="flex-1 p-2 flex items-center justify-center h-full">
-                    <div className={cn(
+                    {/* <div className={cn(
                       "h-full overflow-y-auto",
                       "p-2 md:p-0 place-content-center"
                     )}>
@@ -634,18 +523,70 @@ const LiveStreamInterface = () => {
                           />
                         ))}
                       </div>
-                    </div>
+                    </div> */}
 
-                    {participants.length > 0 && (
-                      <ParticipantsList
-                        participants={participants}
-                        isOpen={isParticipantListOpen}
-                        onClose={() => setIsParticipantListOpen(false)}
-                        className="z-50"
-                      />
-                    )}
+
+                    {/* Remote Stream */}
+                    <section className="border rounded shadow-md w-full lg:w-1/2">
+                      {
+                        joinRoom && remoteUsers &&
+                        Object.keys(remoteUsers).map((uid) => {
+                          const user = remoteUsers[uid];
+                          console.log("remote user", user);
+                          if (
+                            user.videoTrack
+                          ) {
+                            return (
+                              <>
+                                <div className="p-4">
+                                  <div
+                                    id="remote-playerlist"
+                                    className="min-h-[220px] w-full"
+                                  >
+                                    <div className="bg-gray-100 text-gray-700 font-semibold px-2 py-2 border-b">
+                                      Remote Stream
+                                    </div>
+                                    <StreamPlayer
+                                      key={uid}
+                                      videoTrack={user.videoTrack || undefined}
+                                      audioTrack={user.audioTrack || undefined}
+                                      // screenTrack={user.screenTrack || undefined}
+                                      uid={uid}
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          }
+                          return null;
+                        })}
+                    </section>
                   </div>
-              }
+                </div>
+
+                {/* Right Side */}
+                <div className="w-8 md:w-12 lg:w-28 flex flex-col justify-between items-end p-2">
+                  <div
+                    className="cursor-pointer hover:bg-gray-800/50 p-1 md:p-1.5 lg:p-2 rounded-lg transition-colors"
+                  >
+                    {isAudioOn ?
+                      <Mic className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" /> :
+                      <MicOff className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                    }
+                  </div>
+                  <div
+                    onClick={handleVolumeControlClick}
+                    className={cn(
+                      "cursor-pointer hover:bg-gray-800/50 p-1 md:p-1.5 lg:p-2 rounded-lg transition-colors",
+                      showVolumePopup && "bg-gray-800/50"
+                    )}
+                  >
+                    <MoreVertical className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                  </div>
+                </div>
+              </div>
+
+
               <AnimatePresence>
                 {showChat && (
                   <ChatComponent onClose={() => setShowChat(false)} />
@@ -757,7 +698,7 @@ const LiveStreamInterface = () => {
                 <IconButton
                   leftIcon={<Share size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
                   showDivider
-                  onLeftClick={startScreenShare}
+                  onLeftClick={() => { }}
                   onRightClick={() => { }}
                   className=""
                   tooltip="Toggle Video"
@@ -800,7 +741,7 @@ const LiveStreamInterface = () => {
                 <IconButton
                   leftIcon={<Users size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
                   showDivider
-                  rightIcon={participants.length.toString()}
+                  rightIcon={5}
                   onLeftClick={() => setIsParticipantListOpen(!isParticipantListOpen)}
                   onRightClick={() => setIsParticipantListOpen(!isParticipantListOpen)}
                   className={cn(isParticipantListOpen && "bg-gray-100")}
@@ -837,14 +778,6 @@ const LiveStreamInterface = () => {
         onClose={() => setShowVolumePopup(false)}
         anchorRect={volumeAnchorRect}
       />
-      {screenStream && (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="w-full aspect-video bg-gray-900 rounded-lg"
-        />
-      )}
     </div>
   );
 };

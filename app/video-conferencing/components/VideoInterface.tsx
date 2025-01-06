@@ -6,19 +6,18 @@ import MicSelect from './MicSelect';
 import { Button } from '@/components/Button';
 import { useVideoConferencing } from '@/context/VideoConferencingContext';
 import { Mic, Video, Settings, MoreVertical, MicOff, VideoOff } from 'lucide-react';
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { generalHelpers } from '@/helpers';
 import { StreamPlayer } from './StreamPlayer';
 
 export default function VideoInterface({ allowMicrophoneAndCamera, channelName }: { allowMicrophoneAndCamera: boolean, channelName: string; }) {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [handleSelectMicrophone, setHandleSelectMicrophone] = useState(false);
-  const [username, setUsername] = useState("")
-  const { isAudioOn, stage, isVideoOn, toggleAudio, toggleVideo, localUserTrack, options, handleJoin } = useVideoConferencing();
+  const { isAudioOn, isVideoOn, toggleAudio, toggleVideo, username, setUsername, setChannelName, localUserTrack, options, handleJoin } = useVideoConferencing();
   const router = useRouter()
-  console.group({ stage })
+
   const handleGoLive = async () => {
     try {
       await handleJoin()
@@ -27,6 +26,10 @@ export default function VideoInterface({ allowMicrophoneAndCamera, channelName }
       console.error(error);
     }
   };
+
+  useEffect(() => {
+    setChannelName(channelName)
+  }, [channelName, setChannelName])
 
   return (
     <div className="max-w-md mx-auto pt-2">
@@ -48,7 +51,6 @@ export default function VideoInterface({ allowMicrophoneAndCamera, channelName }
             audioTrack={localUserTrack?.audioTrack || null}
             uid={options?.uid || ""}
           />
-
         </div>
       </div>
 

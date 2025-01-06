@@ -24,19 +24,19 @@ export default function RootLayout({
   const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
   const pathname = usePathname();
-  useEffect(() => {
-    const cleanup = () => {
-      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then(stream => {
-          stream.getTracks().forEach(track => {
-            track.stop();
-            console.log('stopping track', track);
-          });
-        });
-    };
+  // useEffect(() => {
+  //   const cleanup = () => {
+  //     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+  //       .then(stream => {
+  //         stream.getTracks().forEach(track => {
+  //           track.stop();
+  //           console.log('stopping track', track);
+  //         });
+  //       });
+  //   };
 
-    return () => cleanup();
-  }, [pathname]);
+  //   return () => cleanup();
+  // }, [pathname]);
 
   return (
     <html lang="en">

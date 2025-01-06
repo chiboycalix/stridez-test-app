@@ -27,6 +27,7 @@ export default function MainLayout({
     '/streaming/:id',
     '/video-conferencing',
     '/video-conferencing/waiting-room',
+    '/video-conferencing/waiting-room/:channelName',
     '/video-conferencing/schedule',
     '/video-conferencing/live',
     '/market-place',

@@ -12,7 +12,7 @@ import {
 } from "agora-rtc-sdk-ng";
 import AgoraRTM, { RtmChannel, RtmClient } from "agora-rtm-sdk";
 import AgoraRTC, { IAgoraRTCClient } from 'agora-rtc-sdk-ng';
-import { useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 
 interface VideoConferencingContextContextType {
   step: number;
@@ -42,6 +42,12 @@ interface VideoConferencingContextContextType {
   setChannelName: (stage: string) => void;
   channelName: string;
   stage: string;
+  remoteUsers: Record<string, any>;
+  joinRoom: boolean;
+  remoteUsersRef: any;
+  setUsername: (username: string) => void;
+  setJoinRoom: (join: boolean) => void;
+  username: string;
 }
 
 let rtcClient: IAgoraRTCClient;
@@ -67,10 +73,13 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const [joinDisabled, setJoinDisabled] = useState(false);
   const [leaveDisabled, setLeaveDisabled] = useState(true);
   const [remoteUsers, setRemoteUsers] = useState<Record<string, any>>({});
-  const remoteUsersRef = useRef(remoteUsers);
-  const username = "testuser"
+  const [username, setUsername] = useState("")
   const [channelName, setChannelName] = useState("")
-  const router = useRouter()
+  const params = useParams()
+  const remoteUsersRef = useRef(remoteUsers);
+
+  const chan = params.channelName
+
   const [localUserTrack, setLocalUserTrack] = useState<ILocalTrack | undefined | any>(
     undefined
   );
@@ -90,7 +99,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   const handleAllowPermissions = async () => {
     try {
-      // Request permissions
       await Promise.all([
         navigator.mediaDevices.getUserMedia({ video: true }),
         navigator.mediaDevices.getUserMedia({ audio: true })
@@ -112,7 +120,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   };
 
   const handleConfigureWaitingArea = async () => {
-    await AgoraRTC.setLogLevel(4);
     try {
       if (localUserTrack?.videoTrack) {
         localUserTrack.videoTrack.stop();
@@ -140,48 +147,48 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   };
 
   const cleanupTracks = async () => {
-    try {
-      // First cleanup Agora tracks
-      if (localUserTrack?.videoTrack) {
-        localUserTrack.videoTrack.stop();
-        await localUserTrack.videoTrack.close();
-      }
-      if (localUserTrack?.audioTrack) {
-        localUserTrack.audioTrack.stop();
-        await localUserTrack.audioTrack.close();
-      }
-      if (localUserTrack?.screenTrack) {
-        localUserTrack.screenTrack.stop();
-        await localUserTrack.screenTrack.close();
-      }
+    // try {
+    //   // First cleanup Agora tracks
+    //   if (localUserTrack?.videoTrack) {
+    //     localUserTrack.videoTrack.stop();
+    //     await localUserTrack.videoTrack.close();
+    //   }
+    //   if (localUserTrack?.audioTrack) {
+    //     localUserTrack.audioTrack.stop();
+    //     await localUserTrack.audioTrack.close();
+    //   }
+    //   if (localUserTrack?.screenTrack) {
+    //     localUserTrack.screenTrack.stop();
+    //     await localUserTrack.screenTrack.close();
+    //   }
 
-      setIsScreenSharing(false);
+    //   setIsScreenSharing(false);
 
-      // Then explicitly stop all media tracks using browser API
-      const streams = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      streams.getTracks().forEach(track => {
-        track.stop();
-      });
+    //   // Then explicitly stop all media tracks using browser API
+    //   const streams = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    //   streams.getTracks().forEach(track => {
+    //     track.stop();
+    //   });
 
-      // Also get all active media tracks and stop them
-      const allTracks = document.querySelectorAll('video, audio');
-      allTracks.forEach(element => {
-        const mediaElement = element as HTMLMediaElement;
-        if (mediaElement.srcObject instanceof MediaStream) {
-          const stream = mediaElement.srcObject;
-          stream.getTracks().forEach(track => {
-            track.stop();
-          });
-          mediaElement.srcObject = null;
-        }
-      });
+    //   // Also get all active media tracks and stop them
+    //   const allTracks = document.querySelectorAll('video, audio');
+    //   allTracks.forEach(element => {
+    //     const mediaElement = element as HTMLMediaElement;
+    //     if (mediaElement.srcObject instanceof MediaStream) {
+    //       const stream = mediaElement.srcObject;
+    //       stream.getTracks().forEach(track => {
+    //         track.stop();
+    //       });
+    //       mediaElement.srcObject = null;
+    //     }
+    //   });
 
-      setLocalUserTrack(undefined);
-      setIsVideoOn(true);
-      setIsAudioOn(true);
-    } catch (error) {
-      console.error("Error cleaning up tracks:", error);
-    }
+    //   setLocalUserTrack(undefined);
+    //   setIsVideoOn(true);
+    //   setIsAudioOn(true);
+    // } catch (error) {
+    //   console.error("Error cleaning up tracks:", error);
+    // }
   };
 
   const toggleAudio = async () => {
@@ -297,23 +304,19 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   };
 
   useEffect(() => {
-    remoteUsersRef.current = remoteUsers;
-  }, [remoteUsers]);
-
-  useEffect(() => {
-    if (channelName && username) {
+    if (chan && username) {
       const fetchAgoraData = async () => {
         try {
           const { rtcOptions, rtmOptions } = await agoraGetAppData(channelName);
 
           setOptions((prev) => ({
             ...prev,
-            appid: rtcOptions.appId,
-            rtcToken: rtcOptions.token.tokenWithUid,
-            rtmToken: rtmOptions.token,
-            certificate: rtcOptions.appCertificate,
-            uid: rtcOptions.uid,
-            channel: rtcOptions.channelName,
+            appid: rtcOptions?.appId,
+            rtcToken: rtcOptions?.token.tokenWithUid,
+            rtmToken: rtmOptions?.token,
+            certificate: rtcOptions?.appCertificate,
+            uid: rtcOptions?.uid,
+            channel: rtcOptions?.channelName,
           }));
         } catch (error) {
           console.error("Error fetching Agora data:", error);
@@ -321,12 +324,9 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       };
 
       fetchAgoraData();
-
-
-      fetchAgoraData();
       setJoinDisabled(false);
     }
-  }, [channelName, username]);
+  }, [channelName, username, chan]);
 
   const handleMemberJoined = async (MemberId: string) => {
     const { name, userRtcUid, userAvatar } =
@@ -390,26 +390,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     });
   };
 
-  const subscribe = async (user: any, mediaType: "audio" | "video") => {
-    await rtcClient.subscribe(user, mediaType);
-
-    const uid = String(user.uid);
-    if (mediaType === "video") {
-      const videoTrack = user.videoTrack;
-      setRemoteUsers((prevUsers) => ({
-        ...prevUsers,
-        [uid]: {
-          ...prevUsers[uid],
-          videoTrack,
-        },
-      }));
-    }
-    if (mediaType === "audio") {
-      const audioTrack = user.audioTrack;
-      audioTrack.play();
-    }
-  };
-
   const handleUserPublished = (user: any, mediaType: "audio" | "video") => {
     subscribe(user, mediaType);
   };
@@ -428,23 +408,22 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   };
 
   const join = async () => {
+    console.log("I have joined")
     rtcClient = AgoraRTC.createClient({
       mode: "live",
       codec: "vp8",
     });
-
     rtcClient.on("user-published", handleUserPublished);
     rtcClient.on("user-unpublished", handleUserUnpublished);
     rtcClient.on("user-left", handleUserLeft);
+
 
     const mode = options?.proxyMode ?? 0;
     if (mode !== 0 && !isNaN(parseInt(mode))) {
       rtcClient.startProxyServer(parseInt(mode));
     }
-
-    if (options.role === "audience") {
+    if (options?.role === "audience") {
       rtcClient.setClientRole(options.role, { level: options.audienceLatency });
-      // add event listener to play remote tracks when remote user publishs.
     } else if (options.role === "host") {
       rtcClient.setClientRole(options.role);
     }
@@ -456,7 +435,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       options.uid || null
     );
 
-    // await joinRtcScreenShare();
     await initRtm(username!);
   };
 
@@ -508,46 +486,40 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   };
 
   const handleJoin = async () => {
-    console.log("options before:", options);
     try {
       if (!options) return;
-
-      console.log("options finally:", options);
       setJoinRoom(true);
       setStage("joinRoom");
       await join();
       setOptions(options);
       setShowStepJoinSuccess(true);
-
       setJoinDisabled(true);
       setLeaveDisabled(false);
       await createTrackAndPublish();
     } catch (error: any) {
-      console.error(error);
+      console.log(error, "error joining");
     }
 
   };
 
-  const leave = async () => {
-    if (localUserTrack) {
-      console.log("yes they is local user and it's beomg removed...");
-      localUserTrack.audioTrack?.close();
-      localUserTrack?.audioTrack?.stop();
-
-      localUserTrack.videoTrack?.close();
-      localUserTrack.videoTrack?.stop();
-      setLocalUserTrack({
-        videoTrack: null as any,
-        audioTrack: null as any,
-        screenTrack: null,
-      });
+  const subscribe = async (user: any, mediaType: "audio" | "video") => {
+    await rtcClient.subscribe(user, mediaType);
+    console.log({ user, mediaType }, "subscribesubscribesubscribe")
+    const uid = String(user.uid);
+    if (mediaType === "video") {
+      const videoTrack = user.videoTrack;
+      setRemoteUsers((prevUsers) => ({
+        ...prevUsers,
+        [uid]: {
+          ...prevUsers[uid],
+          videoTrack,
+        },
+      }));
     }
-
-    setRemoteUsers({});
-    await rtcClient.unpublish();
-    await rtcClient.leave();
-
-    leaveRtmChannel();
+    if (mediaType === "audio") {
+      const audioTrack = user.audioTrack;
+      audioTrack.play();
+    }
   };
 
   useLayoutEffect(() => {
@@ -574,6 +546,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     };
   }, [localUserTrack]);
 
+  console.log({ remoteUsers }, "From context")
   return (
     <VideoConferencingContext.Provider
       value={{
@@ -601,7 +574,13 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         setStage,
         stage,
         setChannelName,
-        channelName
+        channelName,
+        remoteUsers,
+        joinRoom,
+        remoteUsersRef,
+        setUsername,
+        username,
+        setJoinRoom
       }}>
       {children}
     </VideoConferencingContext.Provider>

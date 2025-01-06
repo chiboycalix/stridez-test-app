@@ -1,19 +1,16 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
 import PermissionModal from "@/app/video-conferencing/components/PermissionModal";
-import VideoInterface from "../components/VideoInterface";
 import { useEffect, useState } from "react";
 import { useVideoConferencing } from "@/context/VideoConferencingContext";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
+import VideoInterface from "../../components/VideoInterface";
 
 export default function WaitingRoom() {
-  const { handleConfigureWaitingArea, setChannelName } = useVideoConferencing();
+  const { handleConfigureWaitingArea } = useVideoConferencing();
   const [showPermissionPopup, setShowPermissionPopup] = useState(true);
   const [hasPermissions, setHasPermissions] = useState(false);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const channelName = searchParams.get('channelName');
+  const params = useParams()
 
   const handleAllowPermissions = async () => {
     try {
@@ -47,10 +44,10 @@ export default function WaitingRoom() {
         />
       }
 
-      {/* <VideoInterface
+      <VideoInterface
         allowMicrophoneAndCamera={hasPermissions}
-        channelName={channelName!}
-      /> */}
+        channelName={params.channelName! as string}
+      />
       <div className="h-[18vh]">
 
       </div>
