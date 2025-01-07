@@ -21,6 +21,7 @@ import { Fragment } from 'react'
 import { FaUser, FaCog, FaBookmark, FaSignOutAlt, FaMoon } from 'react-icons/fa'
 import { BsPlusCircle } from 'react-icons/bs'
 import Image from 'next/image'
+import { LivePhoto } from '@/public/assets'
 const Header = () => {
   const { isOpen, toggle } = useSidebar()
   const [darkMode, setDarkMode] = useState(false)
@@ -120,7 +121,7 @@ const Header = () => {
                   >
                     <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14">
                       <Image
-                        src={profile?.avatar || '/default-avatar.png'}
+                        src={profile?.avatar || LivePhoto}
                         alt="User Avatar"
                         fill
                         sizes="(max-width: 640px) 40px, (max-width: 768px) 48px, 56px"

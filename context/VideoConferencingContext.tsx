@@ -158,20 +158,28 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   const toggleAudio = async () => {
     if (localUserTrack && localUserTrack.audioTrack) {
-      const isLocalTrack = "setEnabled" in localUserTrack.audioTrack;
-      if (isLocalTrack) {
-        const localAudioTrack = localUserTrack.audioTrack as ILocalAudioTrack;
-        const newState = !isAudioOn;
-        await localAudioTrack.setEnabled(newState);
-        setIsAudioOn(newState);
-      } else {
-        const remoteAudioTrack = localUserTrack && localUserTrack.audioTrack as IRemoteAudioTrack;
-        if (isAudioOn) {
-          remoteAudioTrack.setVolume(100);
-        } else {
-          remoteAudioTrack.setVolume(0);
+      try {
+        const isLocalTrack = "setEnabled" in localUserTrack.audioTrack;
+        if (isLocalTrack) {
+          const localAudioTrack = localUserTrack.audioTrack as ILocalAudioTrack;
+          const newState = !isAudioOn;
+          await localAudioTrack.setEnabled(newState);
+
+          // Notify other users through RTM channel
+          if (rtmChannel) {
+            await rtmChannel.sendMessage({
+              text: JSON.stringify({
+                type: 'audio-state',
+                uid: options.uid,
+                enabled: newState
+              })
+            });
+          }
+
+          setIsAudioOn(newState);
         }
-        setIsAudioOn(!isAudioOn);
+      } catch (error) {
+        console.error("Error toggling audio:", error);
       }
     }
   };
@@ -180,16 +188,31 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     try {
       if (isVideoOn) {
         if (localUserTrack?.videoTrack) {
-          await localUserTrack.videoTrack.setEnabled(false);
-          localUserTrack.videoTrack.stop();
+          // First unpublish
+          if (rtcClient) {
+            await rtcClient.unpublish(localUserTrack.videoTrack);
+          }
+          // Then close
           await localUserTrack.videoTrack.close();
 
           setLocalUserTrack((prev: any) => ({
             ...prev,
             videoTrack: null
           }));
+
+          // Notify other users through RTM channel
+          if (rtmChannel) {
+            await rtmChannel.sendMessage({
+              text: JSON.stringify({
+                type: 'video-state',
+                uid: options.uid,
+                enabled: false
+              })
+            });
+          }
         }
       } else {
+        // Create new video track
         const videoTrack = await AgoraRTC.createCameraVideoTrack({
           encoderConfig: {
             width: 640,
@@ -198,10 +221,26 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
           }
         });
 
+        // Publish the new track if connected
+        if (rtcClient) {
+          await rtcClient.publish(videoTrack);
+        }
+
         setLocalUserTrack((prev: any) => ({
           ...prev,
           videoTrack
         }));
+
+        // Notify other users through RTM channel
+        if (rtmChannel) {
+          await rtmChannel.sendMessage({
+            text: JSON.stringify({
+              type: 'video-state',
+              uid: options.uid,
+              enabled: true
+            })
+          });
+        }
       }
 
       setIsVideoOn(!isVideoOn);
@@ -325,29 +364,27 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     channel.on("MemberJoined", handleMemberJoined);
     channel.on("MemberLeft", handleMemberLeft);
     channel.on("ChannelMessage", async ({ text }: any) => {
-      console.log("muter is called");
       const message = JSON.parse(text);
-      if (message.command === "mute-microphone" && options.uid == message.uid) {
-        console.log("muter is disabling here.. ");
-        if (
-          localUserTrack?.audioTrack?.enabled ||
-          localUserTrack?.videoTrack?.enabled
-        ) {
-          await localUserTrack?.audioTrack!.setEnabled(false);
-          await localUserTrack?.videoTrack!.setEnabled(false);
-        }
-      } else if (
-        message.command === "unmute-microphone" &&
-        options.uid == message.uid
-      ) {
-        if (
-          !localUserTrack?.audioTrack?.enabled ||
-          !localUserTrack?.videoTrack?.enabled
-        ) {
-          console.log("muter is enabling here.... ");
-          await localUserTrack?.audioTrack!.setEnabled(true);
-          await localUserTrack?.videoTrack!.setEnabled(true);
-        }
+      if (message.type === 'video-state') {
+        const uid = String(message.uid);
+        setRemoteUsers((prevUsers) => ({
+          ...prevUsers,
+          [uid]: {
+            ...prevUsers[uid],
+            videoTrack: message.enabled ? prevUsers[uid]?.videoTrack : null
+          },
+        }));
+      }
+
+      if (message.type === 'audio-state') {
+        const uid = String(message.uid);
+        setRemoteUsers((prevUsers) => ({
+          ...prevUsers,
+          [uid]: {
+            ...prevUsers[uid],
+            audioEnabled: message.enabled
+          },
+        }));
       }
     });
   };
@@ -361,6 +398,8 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       mode: "live",
       codec: "vp8",
     });
+    AgoraRTC.setLogLevel(4);
+    AgoraRTC.enableLogUpload();
     rtcClient.on("user-published", handleUserPublished);
 
     rtcClient.on("user-unpublished", handleUserUnpublished);
@@ -388,14 +427,13 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   };
 
   const handleUserUnpublished = (user: any, mediaType: "audio" | "video") => {
-    console.log("Checking if this event was called.........", remoteUsers);
-
     const uid = String(user.uid);
     setRemoteUsers((prevUsers) => ({
       ...prevUsers,
       [uid]: {
         ...prevUsers[uid],
         [mediaType]: null,
+        ...(mediaType === 'audio' ? { audioEnabled: false } : {})
       },
     }));
   };
@@ -467,6 +505,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const subscribe = async (user: any, mediaType: "audio" | "video") => {
     await rtcClient.subscribe(user, mediaType);
     const uid = String(user.uid);
+
     if (mediaType === "video") {
       const videoTrack = user.videoTrack;
       setRemoteUsers((prevUsers) => ({
@@ -479,6 +518,14 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
     if (mediaType === "audio") {
       const audioTrack = user.audioTrack;
+      setRemoteUsers((prevUsers) => ({
+        ...prevUsers,
+        [uid]: {
+          ...prevUsers[uid],
+          audioTrack,
+          audioEnabled: true
+        },
+      }));
       audioTrack.play();
     }
   };
@@ -490,7 +537,8 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
     return () => {
       if (localUserTrack && localUserTrack.videoTrack) {
-        localUserTrack.videoTrack.stop();
+        // Just unplay/remove from DOM
+        localUserTrack.videoTrack.close();
       }
     };
   }, [localUserTrack, options]);

@@ -10,11 +10,14 @@ import { Manrope } from 'next/font/google'
 import { usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 import AgoraRTC, { AgoraRTCProvider } from "agora-rtc-react";
+import { initAgoraLogging } from '@/lib/agora/initAgoraLogging'
 
 const manrope = Manrope({
   subsets: ['latin'],
   display: 'swap',
 })
+
+initAgoraLogging();
 
 export default function RootLayout({
   children,
@@ -22,21 +25,6 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-
-  const pathname = usePathname();
-  // useEffect(() => {
-  //   const cleanup = () => {
-  //     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-  //       .then(stream => {
-  //         stream.getTracks().forEach(track => {
-  //           track.stop();
-  //           console.log('stopping track', track);
-  //         });
-  //       });
-  //   };
-
-  //   return () => cleanup();
-  // }, [pathname]);
 
   return (
     <html lang="en">

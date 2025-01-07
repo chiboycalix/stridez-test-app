@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   ICameraVideoTrack,
   ILocalAudioTrack,
@@ -20,35 +20,42 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
   uid = "",
   options = {}
 }) => {
-
-  const { videoRef, isVideoOn, remoteUsersRef } = useVideoConferencing();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { isVideoOn } = useVideoConferencing();
 
   useEffect(() => {
-    if (videoTrack && videoRef.current && isVideoOn) {
-      videoTrack.play(videoRef.current);
-    }
+    if (!videoTrack || !containerRef.current) return;
 
-    return () => {
-      if (videoTrack) {
-        videoTrack.stop();
+    const playVideo = () => {
+      if (containerRef.current) {
+        videoTrack.play(containerRef.current);
       }
     };
-  }, [videoTrack, isVideoOn, videoRef]);
+
+    playVideo();
+
+    return () => {
+      videoTrack.stop();
+    };
+  }, [videoTrack]);
+
+  if (!videoTrack) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-800 text-white">
+        <div className="flex flex-col items-center space-y-2">
+          <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center text-2xl">
+            {typeof uid === 'string' ? uid.charAt(0).toUpperCase() : 'U'}
+          </div>
+          <p className="text-center text-gray-300">Video Off</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full h-full">
-      {videoTrack && isVideoOn ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="w-full h-full object-cover"
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center bg-gray-100">
-          <p className="text-center text-gray-500">Camera Off</p>
-        </div>
-      )}
-    </div>
+    <div
+      ref={containerRef}
+      className="w-full h-full"
+    />
   );
 };

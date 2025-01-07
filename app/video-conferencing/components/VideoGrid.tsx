@@ -1,6 +1,24 @@
 import React from 'react';
+import { Mic, MicOff } from 'lucide-react';
+import { useVideoConferencing } from "@/context/VideoConferencingContext";
+
+const VideoMutedDisplay = ({ participant }: any) => {
+  return (
+    <div className="flex items-center justify-center w-full h-full bg-gray-800 rounded-lg">
+      <div className="flex flex-col items-center">
+        <div className="w-16 h-16 rounded-full bg-gray-600 flex items-center justify-center text-xl text-white">
+          {participant.name?.[0]?.toUpperCase() || participant.isLocal ? 'Y' : 'U'}
+        </div>
+        <p className="mt-2 text-white text-sm">
+          {participant.isLocal ? 'You' : participant.name || `User ${participant.uid}`}
+        </p>
+      </div>
+    </div>
+  );
+};
 
 const VideoGrid = ({ localUser, remoteUsers, StreamPlayer }: any) => {
+  const { isAudioOn } = useVideoConferencing();
   const totalParticipants = Object.keys(remoteUsers || {}).length + 1;
 
   const getGridLayout = () => {
@@ -16,6 +34,14 @@ const VideoGrid = ({ localUser, remoteUsers, StreamPlayer }: any) => {
       default:
         return "grid-cols-2 md:grid-cols-3";
     }
+  };
+
+  const getAudioState = (participant: any) => {
+    if (participant.isLocal) {
+      return isAudioOn;
+    }
+    // Check both audioEnabled flag and audioTrack state
+    return participant.audioEnabled !== false && participant.audioTrack?.enabled !== false;
   };
 
   const getVideoContainerClass = (isLocal: boolean, index: number, totalParticipants: number) => {
@@ -51,23 +77,38 @@ const VideoGrid = ({ localUser, remoteUsers, StreamPlayer }: any) => {
     <div className="h-full w-full">
       <div className={`grid ${getGridLayout()} gap-2 p-2 h-full ${totalParticipants === 2 ? 'items-center' : ''}`}>
         {allParticipants.map((participant, index) => (
-          participant.videoTrack && (
-            <div
-              key={participant.uid}
-              className={getVideoContainerClass(participant.isLocal, index, totalParticipants)}
-            >
-              <div className="relative h-full w-full rounded-lg overflow-hidden">
+          <div
+            key={participant.uid}
+            className={getVideoContainerClass(participant.isLocal, index, totalParticipants)}
+          >
+            <div className="relative h-full w-full rounded-lg overflow-hidden">
+              {!participant.videoTrack ? (
+                <VideoMutedDisplay participant={participant} />
+              ) : (
                 <StreamPlayer
                   videoTrack={participant.videoTrack}
                   audioTrack={participant.audioTrack}
                   uid={participant.uid}
                 />
-                <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
-                  {participant.isLocal ? 'You' : participant.name || `User ${index}`}
+              )}
+
+              {/* Controls Overlay */}
+              <div className="absolute top-0 right-0 p-2 flex flex-col gap-2">
+                <div className="bg-black/50 p-1.5 rounded-lg">
+                  {getAudioState(participant) ? (
+                    <Mic size={16} className="text-white" />
+                  ) : (
+                    <MicOff size={16} className="text-red-500" />
+                  )}
                 </div>
               </div>
+
+              {/* User Label */}
+              <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
+                {participant.isLocal ? 'You' : participant.name || `User ${index}`}
+              </div>
             </div>
-          )
+          </div>
         ))}
       </div>
     </div>
