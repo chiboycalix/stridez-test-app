@@ -1,15 +1,13 @@
-import { useEffect, useState } from 'react';
-import AgoraRTC from 'agora-rtc-sdk-ng';
-
-const VideoMutedDisplay = ({ username }: { username: string }) => {
+const VideoMutedDisplay = ({ participant }: any) => {
   return (
-    <div className="flex items-center justify-center w-full h-full bg-gray-800">
+    <div className="flex items-center justify-center w-full h-full bg-gray-800 rounded-lg">
       <div className="flex flex-col items-center">
-        <div className="w-20 h-20 rounded-full bg-gray-600 flex items-center justify-center text-2xl text-white">
-          {username?.charAt(0)?.toUpperCase() || '?'}
+        <div className="w-16 h-16 rounded-full bg-gray-600 flex items-center justify-center text-xl text-white">
+          {participant.name?.[0]?.toUpperCase() || participant.isLocal ? 'Y' : 'U'}
         </div>
-        <p className="mt-2 text-white">{username || 'User'}</p>
-        <p className="text-sm text-gray-400">Video Off</p>
+        <p className="mt-2 text-white text-sm">
+          {participant.isLocal ? 'You' : participant.name || `User ${participant.uid}`}
+        </p>
       </div>
     </div>
   );

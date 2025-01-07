@@ -1,25 +1,13 @@
 import React from 'react';
 import { Mic, MicOff } from 'lucide-react';
 import { useVideoConferencing } from "@/context/VideoConferencingContext";
+import VideoMutedDisplay from './VideoMutedDisplay';
 
-const VideoMutedDisplay = ({ participant }: any) => {
-  return (
-    <div className="flex items-center justify-center w-full h-full bg-gray-800 rounded-lg">
-      <div className="flex flex-col items-center">
-        <div className="w-16 h-16 rounded-full bg-gray-600 flex items-center justify-center text-xl text-white">
-          {participant.name?.[0]?.toUpperCase() || participant.isLocal ? 'Y' : 'U'}
-        </div>
-        <p className="mt-2 text-white text-sm">
-          {participant.isLocal ? 'You' : participant.name || `User ${participant.uid}`}
-        </p>
-      </div>
-    </div>
-  );
-};
 
-const VideoGrid = ({ localUser, remoteUsers, StreamPlayer }: any) => {
-  const { isAudioOn } = useVideoConferencing();
-  const totalParticipants = Object.keys(remoteUsers || {}).length + 1;
+
+const VideoGrid = ({ localUser, remoteParticipants, StreamPlayer }: any) => {
+  const { isMicrophoneEnabled } = useVideoConferencing();
+  const totalParticipants = Object.keys(remoteParticipants || {}).length + 1;
 
   const getGridLayout = () => {
     switch (totalParticipants) {
@@ -38,9 +26,8 @@ const VideoGrid = ({ localUser, remoteUsers, StreamPlayer }: any) => {
 
   const getAudioState = (participant: any) => {
     if (participant.isLocal) {
-      return isAudioOn;
+      return isMicrophoneEnabled;
     }
-    // Check both audioEnabled flag and audioTrack state
     return participant.audioEnabled !== false && participant.audioTrack?.enabled !== false;
   };
 
@@ -63,7 +50,7 @@ const VideoGrid = ({ localUser, remoteUsers, StreamPlayer }: any) => {
     return "col-span-1 h-64 md:h-72";
   };
 
-  const remoteUsersArray = Object.entries(remoteUsers || {}).map(([uid, user]: any) => ({
+  const remoteUsersArray = Object.entries(remoteParticipants || {}).map(([uid, user]: any) => ({
     ...user,
     uid
   }));

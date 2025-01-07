@@ -21,7 +21,7 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
   options = {}
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { isVideoOn } = useVideoConferencing();
+  const { isCameraEnabled } = useVideoConferencing();
 
   useEffect(() => {
     if (!videoTrack || !containerRef.current) return;

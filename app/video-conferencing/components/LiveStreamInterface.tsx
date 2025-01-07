@@ -361,7 +361,6 @@ const InvitePeopleTab = () => {
   );
 };
 
-
 type JoinRequest = {
   id: string;
   name: string;
@@ -380,7 +379,7 @@ const LiveStreamInterface = () => {
   const [volumeAnchorRect, setVolumeAnchorRect] = useState<DOMRect | null>(null);
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [isParticipantListOpen, setIsParticipantListOpen] = useState(false);
-  const { isAudioOn, isVideoOn, remoteUsers, remoteUsersRef, toggleScreenShare, isScreenSharing, toggleAudio, toggleVideo, localUserTrack, options } = useVideoConferencing();
+  const { isMicrophoneEnabled, isCameraEnabled, remoteParticipants, remoteUsersRef, toggleScreenSharing, isScreenShareActive, toggleMicrophone, toggleCamera, localUserTrack, meetingConfig } = useVideoConferencing();
 
   const searchParams = useSearchParams();
   const username = searchParams.get("username");
@@ -397,8 +396,8 @@ const LiveStreamInterface = () => {
   }, []);
 
   useEffect(() => {
-    remoteUsersRef.current = remoteUsers;
-  }, [remoteUsers]);
+    remoteUsersRef.current = remoteParticipants;
+  }, [remoteParticipants]);
 
   const handleAllow = (requesterId: string) => {
     console.log('Allowing user:', requesterId);
@@ -488,9 +487,9 @@ const LiveStreamInterface = () => {
                     localUser={{
                       videoTrack: localUserTrack?.videoTrack,
                       audioTrack: localUserTrack?.audioTrack,
-                      uid: options?.uid
+                      uid: meetingConfig?.uid
                     }}
-                    remoteUsers={remoteUsers}
+                    remoteParticipants={remoteParticipants}
                     StreamPlayer={StreamPlayer}
                   />
                 </div>
@@ -500,7 +499,7 @@ const LiveStreamInterface = () => {
                   <div
                     className="cursor-pointer hover:bg-gray-800/50 p-1 md:p-1.5 lg:p-2 rounded-lg transition-colors"
                   >
-                    {isAudioOn ?
+                    {isMicrophoneEnabled ?
                       <Mic className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" /> :
                       <MicOff className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
                     }
@@ -604,18 +603,18 @@ const LiveStreamInterface = () => {
             <div className="flex items-center justify-between min-w-[640px] md:min-w-0 gap-4 md:grid md:grid-cols-3 md:gap-2 lg:gap-4">
               <div className="flex items-center gap-1 md:gap-2">
                 <IconButton
-                  leftIcon={isAudioOn ? <Mic size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" /> : <MicOff size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
+                  leftIcon={isMicrophoneEnabled ? <Mic size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" /> : <MicOff size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
                   showDivider
-                  onLeftClick={toggleAudio}
+                  onLeftClick={toggleMicrophone}
                   onRightClick={() => { }}
                   className=""
                   tooltip="Toggle microphone"
                   rightTooltip="Microphone settings"
                 />
                 <IconButton
-                  leftIcon={isVideoOn ? <Video size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" /> : <VideoOff size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
+                  leftIcon={isCameraEnabled ? <Video size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" /> : <VideoOff size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
                   showDivider
-                  onLeftClick={toggleVideo}
+                  onLeftClick={toggleCamera}
                   onRightClick={() => { }}
                   className=""
                   tooltip="Toggle Video"
@@ -635,8 +634,8 @@ const LiveStreamInterface = () => {
                   rightTooltip="Microphone settings"
                 />
                 <IconButton
-                  leftIcon={!isScreenSharing ? <SquareArrowOutUpRight size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" /> : <MonitorOff className="w-5 h-5" />}
-                  onLeftClick={toggleScreenShare}
+                  leftIcon={!isScreenShareActive ? <SquareArrowOutUpRight size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" /> : <MonitorOff className="w-5 h-5" />}
+                  onLeftClick={toggleScreenSharing}
                   className=""
                   tooltip="Share screen"
                   rightTooltip="Share screen settings"

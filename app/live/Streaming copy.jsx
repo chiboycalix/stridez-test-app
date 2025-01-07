@@ -73,7 +73,7 @@ const StartLive = () => {
     navigate("/Live");
   };
 
-  const toggleAudio = useCallback(async () => {
+  const toggleMicrophone = useCallback(async () => {
     startVideo();
     if (streamRef.current) {
       const audioTrack = streamRef.current.getAudioTracks()[0];
@@ -280,8 +280,8 @@ const StartLive = () => {
   }, [allowCamera, toggleCamera]);
 
   useEffect(() => {
-    if (allowAudio) toggleAudio();
-  }, [allowAudio, toggleAudio]);
+    if (allowAudio) toggleMicrophone();
+  }, [allowAudio, toggleMicrophone]);
 
   useEffect(() => {
     const user = getCurrentUser();
@@ -437,13 +437,13 @@ const StartLive = () => {
           {/* Controls */}
           <div className="flex justify-center items-center gap-x-4 mt-4">
             <p
-              onClick={toggleAudio}
+              onClick={toggleMicrophone}
               className="p-3 hover:cursor-pointer rounded-lg bg-blue-600 hover:bg-purple-700"
             >
               mute audio
             </p>
             <p
-              onClick={toggleAudio}
+              onClick={toggleMicrophone}
               className="p-3 hover:cursor-pointer rounded-lg bg-blue-600  hover:bg-purple-700"
             >
               unmute audio
@@ -452,7 +452,7 @@ const StartLive = () => {
             <img
               src={allowAudio ? Audio : AudioLess}
               alt="Audio Toggle"
-              onClick={toggleAudio}
+              onClick={toggleMicrophone}
               className="w-10 h-10 cursor-pointer"
             />
             <img

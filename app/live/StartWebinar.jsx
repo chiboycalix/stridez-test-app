@@ -1,24 +1,24 @@
 import React, { useState, useRef, useEffect } from "react";
-import Logo from '../../assets/logo.png';
-import Live from '../../assets/Live.png';
-import Analytics from '../../assets/Analytics.png';
-import Calendar from '../../assets/Calendar.png';
-import CourseManage from '../../assets/CourseManage.png';
-import ExploreFor from '../../assets/ExploreFor.png';
-import HorizontalDivider from '../../assets/HorizontalDivider.png';
-import Notification from '../../assets/Notification.png';
-import Profile from '../../assets/Profile.png';
-import UploadVideo from '../../assets/UploadVideo.png';
-import Camera from '../../assets/Camera.png';
-import CameraLess from '../../assets/CameraLess.png';
-import Audio from '../../assets/Audio.png';
-import AudioLess from '../../assets/AudioLess.png';
-import Talk from '../../assets/talk.png'; // Image for chat button
-import WhiteBoard from '../../assets/WhiteBoard.png'; // Image for whiteboard button
-import Group from '../../assets/group.png'; // Image for participants button
-import Adjust from '../../assets/Adjust.png'; // Image for exit button
-import Pupil from '../../assets/Pupil.png';
-import '../../styles/StartWebinar.css';
+import Logo from "../../assets/logo.png";
+import Live from "../../assets/Live.png";
+import Analytics from "../../assets/Analytics.png";
+import Calendar from "../../assets/Calendar.png";
+import CourseManage from "../../assets/CourseManage.png";
+import ExploreFor from "../../assets/ExploreFor.png";
+import HorizontalDivider from "../../assets/HorizontalDivider.png";
+import Notification from "../../assets/Notification.png";
+import Profile from "../../assets/Profile.png";
+import UploadVideo from "../../assets/UploadVideo.png";
+import Camera from "../../assets/Camera.png";
+import CameraLess from "../../assets/CameraLess.png";
+import Audio from "../../assets/Audio.png";
+import AudioLess from "../../assets/AudioLess.png";
+import Talk from "../../assets/talk.png"; // Image for chat button
+import WhiteBoard from "../../assets/WhiteBoard.png"; // Image for whiteboard button
+import Group from "../../assets/group.png"; // Image for participants button
+import Adjust from "../../assets/Adjust.png"; // Image for exit button
+import Pupil from "../../assets/Pupil.png";
+import "../../styles/StartWebinar.css";
 
 const StartWebinar = () => {
   const [isAudioOn, setIsAudioOn] = useState(true);
@@ -70,7 +70,7 @@ const StartWebinar = () => {
   useEffect(() => {
     if (canvasRef.current) {
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       ctx.lineWidth = 2;
       ctx.lineCap = "round";
       ctx.strokeStyle = "black";
@@ -82,15 +82,15 @@ const StartWebinar = () => {
     const ctx = ctxRef.current;
     if (ctx) {
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      strokes.forEach(stroke => {
+      strokes.forEach((stroke) => {
         ctx.beginPath();
         ctx.moveTo(stroke.start.x, stroke.start.y);
         ctx.lineTo(stroke.end.x, stroke.end.y);
         ctx.stroke();
         ctx.closePath();
       });
-      shapes.forEach(shape => drawShape(shape.type, shape.x, shape.y, false));
-      texts.forEach(text => {
+      shapes.forEach((shape) => drawShape(shape.type, shape.x, shape.y, false));
+      texts.forEach((text) => {
         ctx.fillText(text.text, text.x, text.y);
       });
     }
@@ -108,17 +108,27 @@ const StartWebinar = () => {
     const y = e.nativeEvent.offsetY;
     if (isErasing) {
       ctxRef.current.clearRect(x - 5, y - 5, 10, 10);
-      setTexts(texts.filter(text => !isWithinBounds(text, x, y)));
-      setShapes(shapes.filter(shape => !isWithinBounds(shape, x, y)));
-      setStrokes(strokes.filter(stroke => {
-        return !(x >= Math.min(stroke.start.x, stroke.end.x) && x <= Math.max(stroke.start.x, stroke.end.x) && y >= Math.min(stroke.start.y, stroke.end.y) && y <= Math.max(stroke.start.y, stroke.end.y));
-      }));
+      setTexts(texts.filter((text) => !isWithinBounds(text, x, y)));
+      setShapes(shapes.filter((shape) => !isWithinBounds(shape, x, y)));
+      setStrokes(
+        strokes.filter((stroke) => {
+          return !(
+            x >= Math.min(stroke.start.x, stroke.end.x) &&
+            x <= Math.max(stroke.start.x, stroke.end.x) &&
+            y >= Math.min(stroke.start.y, stroke.end.y) &&
+            y <= Math.max(stroke.start.y, stroke.end.y)
+          );
+        })
+      );
     } else {
       ctxRef.current.lineTo(x, y);
       ctxRef.current.stroke();
       setStrokes((prevStrokes) => [
         ...prevStrokes,
-        { start: { x, y }, end: { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY } },
+        {
+          start: { x, y },
+          end: { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY },
+        },
       ]);
     }
   };
@@ -172,21 +182,27 @@ const StartWebinar = () => {
   const drawShape = (shape, x, y, save) => {
     const ctx = ctxRef.current;
     switch (shape) {
-      case 'rectangle':
+      case "rectangle":
         ctx.strokeRect(x, y, 100, 50);
         if (save) {
-          setShapes((prevShapes) => [...prevShapes, { type: 'rectangle', x, y, width: 100, height: 50 }]);
+          setShapes((prevShapes) => [
+            ...prevShapes,
+            { type: "rectangle", x, y, width: 100, height: 50 },
+          ]);
         }
         break;
-      case 'circle':
+      case "circle":
         ctx.beginPath();
         ctx.arc(x, y, 50, 0, 2 * Math.PI);
         ctx.stroke();
         if (save) {
-          setShapes((prevShapes) => [...prevShapes, { type: 'circle', x, y, radius: 50 }]);
+          setShapes((prevShapes) => [
+            ...prevShapes,
+            { type: "circle", x, y, radius: 50 },
+          ]);
         }
         break;
-      case 'triangle':
+      case "triangle":
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.lineTo(x + 50, y + 100);
@@ -194,7 +210,18 @@ const StartWebinar = () => {
         ctx.closePath();
         ctx.stroke();
         if (save) {
-          setShapes((prevShapes) => [...prevShapes, { type: 'triangle', x, y, points: [{ x: x + 50, y: y + 100 }, { x: x - 50, y: y + 100 }] }]);
+          setShapes((prevShapes) => [
+            ...prevShapes,
+            {
+              type: "triangle",
+              x,
+              y,
+              points: [
+                { x: x + 50, y: y + 100 },
+                { x: x - 50, y: y + 100 },
+              ],
+            },
+          ]);
         }
         break;
       default:
@@ -203,11 +230,16 @@ const StartWebinar = () => {
   };
 
   const isWithinBounds = (item, x, y) => {
-    if (item.type === 'rectangle') {
-      return x >= item.x && x <= item.x + item.width && y >= item.y && y <= item.y + item.height;
-    } else if (item.type === 'circle') {
+    if (item.type === "rectangle") {
+      return (
+        x >= item.x &&
+        x <= item.x + item.width &&
+        y >= item.y &&
+        y <= item.y + item.height
+      );
+    } else if (item.type === "circle") {
       return Math.sqrt((x - item.x) ** 2 + (y - item.y) ** 2) <= item.radius;
-    } else if (item.type === 'triangle') {
+    } else if (item.type === "triangle") {
       // Basic bounding box check for triangle
       const minX = Math.min(item.x, item.points[0].x, item.points[1].x);
       const maxX = Math.max(item.x, item.points[0].x, item.points[1].x);
@@ -217,7 +249,12 @@ const StartWebinar = () => {
     } else if (item.text) {
       const textWidth = ctxRef.current.measureText(item.text).width;
       const textHeight = 16; // Assume a fixed height for simplicity
-      return x >= item.x && x <= item.x + textWidth && y >= item.y - textHeight && y <= item.y;
+      return (
+        x >= item.x &&
+        x <= item.x + textWidth &&
+        y >= item.y - textHeight &&
+        y <= item.y
+      );
     }
     return false;
   };
@@ -225,7 +262,10 @@ const StartWebinar = () => {
   useEffect(() => {
     const startStream = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -270,19 +310,30 @@ const StartWebinar = () => {
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
                   onClick={handleCanvasClick}
-                  className={`whiteboard-canvas ${isErasing ? 'eraser-cursor' : 'pen-cursor'}`}
+                  className={`whiteboard-canvas ${
+                    isErasing ? "eraser-cursor" : "pen-cursor"
+                  }`}
                 />
                 <div className="whiteboard-controls">
                   <button className="webinar-button" onClick={toggleEraser}>
                     {isErasing ? "Switch to Pen" : "Switch to Eraser"}
                   </button>
-                  <button className="webinar-button" onClick={() => handleAddShape('rectangle')}>
+                  <button
+                    className="webinar-button"
+                    onClick={() => handleAddShape("rectangle")}
+                  >
                     Add Rectangle
                   </button>
-                  <button className="webinar-button" onClick={() => handleAddShape('circle')}>
+                  <button
+                    className="webinar-button"
+                    onClick={() => handleAddShape("circle")}
+                  >
                     Add Circle
                   </button>
-                  <button className="webinar-button" onClick={() => handleAddShape('triangle')}>
+                  <button
+                    className="webinar-button"
+                    onClick={() => handleAddShape("triangle")}
+                  >
                     Add Triangle
                   </button>
                   <button className="webinar-button" onClick={handleAddText}>
@@ -300,7 +351,9 @@ const StartWebinar = () => {
                 <div className="chat">
                   <div className="chat-messages">
                     {chatMessages.map((msg, index) => (
-                      <div key={index} className="chat-message">{msg}</div>
+                      <div key={index} className="chat-message">
+                        {msg}
+                      </div>
                     ))}
                   </div>
                   <div className="chat-input-container">
@@ -311,16 +364,26 @@ const StartWebinar = () => {
                       placeholder="Type your message..."
                     ></textarea>
                     <div className="chat-buttons">
-                      <button className="webinar-button" onClick={handleSendChat}>Send</button>
-                      <button className="webinar-button" onClick={toggleEmojiPicker}>Emoji</button>
+                      <button
+                        className="webinar-button"
+                        onClick={handleSendChat}
+                      >
+                        Send
+                      </button>
+                      <button
+                        className="webinar-button"
+                        onClick={toggleEmojiPicker}
+                      >
+                        Emoji
+                      </button>
                     </div>
                     {showEmojiPicker && (
                       <div className="emoji-picker">
-                        <span onClick={() => handleEmojiClick('😊')}>😊</span>
-                        <span onClick={() => handleEmojiClick('😂')}>😂</span>
-                        <span onClick={() => handleEmojiClick('😍')}>😍</span>
-                        <span onClick={() => handleEmojiClick('😢')}>😢</span>
-                        <span onClick={() => handleEmojiClick('👍')}>👍</span>
+                        <span onClick={() => handleEmojiClick("😊")}>😊</span>
+                        <span onClick={() => handleEmojiClick("😂")}>😂</span>
+                        <span onClick={() => handleEmojiClick("😍")}>😍</span>
+                        <span onClick={() => handleEmojiClick("😢")}>😢</span>
+                        <span onClick={() => handleEmojiClick("👍")}>👍</span>
                       </div>
                     )}
                   </div>
@@ -329,11 +392,19 @@ const StartWebinar = () => {
             </div>
           </div>
           <div className="webinar-controls">
-            <button className="webinar-button" onClick={toggleAudio}>
-              <img src={isAudioOn ? Audio : AudioLess} alt={isAudioOn ? "Mute Audio" : "Unmute Audio"} className="audio"/>
+            <button className="webinar-button" onClick={toggleMicrophone}>
+              <img
+                src={isMicrophoneEnabled ? Audio : AudioLess}
+                alt={isMicrophoneEnabled ? "Mute Audio" : "Unmute Audio"}
+                className="audio"
+              />
             </button>
             <button className="webinar-button" onClick={toggleCamera}>
-              <img src={isCameraOn ? Camera : CameraLess} alt={isCameraOn ? "Turn Off Camera" : "Turn On Camera"}  className="camera"/>
+              <img
+                src={isCameraOn ? Camera : CameraLess}
+                alt={isCameraOn ? "Turn Off Camera" : "Turn On Camera"}
+                className="camera"
+              />
             </button>
             <button className="webinar-button" onClick={toggleChat}>
               <img src={Talk} alt="Chat" />
@@ -345,7 +416,7 @@ const StartWebinar = () => {
               <img src={Group} alt="Participants" />
             </button>
             <button className="webinar-button">
-              <img src={Adjust} alt="Exit" className="adjust"/>
+              <img src={Adjust} alt="Exit" className="adjust" />
             </button>
           </div>
         </div>

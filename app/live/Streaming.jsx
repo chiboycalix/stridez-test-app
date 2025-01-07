@@ -129,7 +129,7 @@ export default function App() {
     const zp = ZegoUIKitPrebuilt.create(kitToken);
     // Start the call
     zp &&
-      zp.joinRoom({
+      zp.hasJoinedMeeting({
         container: element,
         scenario: {
           mode: ZegoUIKitPrebuilt.LiveStreaming,

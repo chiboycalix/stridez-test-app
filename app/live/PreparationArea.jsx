@@ -14,7 +14,7 @@ const PreparationArea = () => {
   const [user, setUser] = useState("");
   const [userName, setUserName] = useState("");
   const [isRequesting, setIsRequesting] = useState(false);
-  const socket = io('http://localhost:4000') 
+  const socket = io("http://localhost:4000");
 
   const navigate = useNavigate();
   const videoRef = useRef(null);
@@ -63,8 +63,6 @@ const PreparationArea = () => {
       console.log("data.......approved", data);
       navigate("/StartLive");
     });
-
-
 
     return () => {
       if (socket) {

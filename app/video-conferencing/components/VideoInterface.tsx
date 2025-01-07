@@ -14,13 +14,13 @@ import LiveStreamInterface from './LiveStreamInterface';
 export default function VideoInterface({ allowMicrophoneAndCamera, channelName, username }: { allowMicrophoneAndCamera: boolean, channelName: string; username: string }) {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [handleSelectMicrophone, setHandleSelectMicrophone] = useState(false);
-  const { isAudioOn, remoteUsersRef, setStage, setJoinRoom, joinRoom, isVideoOn, remoteUsers, toggleAudio, toggleVideo, setUsername, setChannelName, localUserTrack, options, handleJoin } = useVideoConferencing();
+  const { isMicrophoneEnabled, remoteUsersRef, setMeetingStage, setHasJoinedMeeting, hasJoinedMeeting, isCameraEnabled, remoteParticipants, toggleMicrophone, toggleCamera, setUsername, setChannelName, localUserTrack, meetingConfig, joinMeetingRoom } = useVideoConferencing();
 
   const handleGoLive = async () => {
     try {
-      await handleJoin()
-      setStage("joinRoom")
-      setJoinRoom(true);
+      await joinMeetingRoom()
+      setMeetingStage("hasJoinedMeeting")
+      setHasJoinedMeeting(true);
     } catch (error: any) {
       console.error(error);
     }
@@ -32,13 +32,13 @@ export default function VideoInterface({ allowMicrophoneAndCamera, channelName, 
   }, [channelName, setChannelName, username, setUsername])
 
   useEffect(() => {
-    remoteUsersRef.current = remoteUsers;
-  }, [remoteUsers, remoteUsersRef]);
+    remoteUsersRef.current = remoteParticipants;
+  }, [remoteParticipants, remoteUsersRef]);
 
   return (
     <div>
       {
-        joinRoom ? <LiveStreamInterface /> :
+        hasJoinedMeeting ? <LiveStreamInterface /> :
 
           <div className="max-w-md mx-auto pt-2">
             <div className="flex flex-col items-center w-full mx-auto">
@@ -52,12 +52,12 @@ export default function VideoInterface({ allowMicrophoneAndCamera, channelName, 
 
               <div className="w-full aspect-video bg-gray-100 rounded-lg mt-6 relative h-[40vh]">
                 <button className="absolute top-2 right-2 p-1 bg-black rounded-full z-10">
-                  {isAudioOn ? <Mic size={16} className="text-white" /> : <MicOff size={16} className="text-white" />}
+                  {isMicrophoneEnabled ? <Mic size={16} className="text-white" /> : <MicOff size={16} className="text-white" />}
                 </button>
                 <StreamPlayer
                   videoTrack={localUserTrack?.videoTrack || null}
                   audioTrack={localUserTrack?.audioTrack || null}
-                  uid={options?.uid || ""}
+                  uid={meetingConfig?.uid || ""}
                 />
               </div>
             </div>
@@ -66,8 +66,8 @@ export default function VideoInterface({ allowMicrophoneAndCamera, channelName, 
               <div className='flex items-center justify-between mt-6 relative'>
                 <div className='flex space-x-3 '>
                   <div className='w-16 h-10 bg-gray-100 flex items-center justify-center rounded cursor-pointer'>
-                    <div onClick={toggleAudio} className='cursor-pointer'>
-                      {isAudioOn ? <Mic /> : <MicOff />}
+                    <div onClick={toggleMicrophone} className='cursor-pointer'>
+                      {isMicrophoneEnabled ? <Mic /> : <MicOff />}
                     </div>
                     <Fragment>
                       <MoreVertical size={20} onClick={() => setHandleSelectMicrophone(!handleSelectMicrophone)} className='cursor-pointer' />
@@ -79,8 +79,8 @@ export default function VideoInterface({ allowMicrophoneAndCamera, channelName, 
                     </Fragment>
                   </div>
                   <div className='w-16 h-10 bg-gray-100 flex items-center justify-center rounded cursor-pointer'>
-                    <div onClick={toggleVideo} className='cursor-pointer'>
-                      {isVideoOn ? <Video /> : <VideoOff />}
+                    <div onClick={toggleCamera} className='cursor-pointer'>
+                      {isCameraEnabled ? <Video /> : <VideoOff />}
                     </div>
                     <div>
                       <MoreVertical size={20} className='cursor-pointer' />

@@ -6,7 +6,7 @@ import { useVideoConferencing } from "@/context/VideoConferencingContext";
 import { useParams, useSearchParams } from "next/navigation";
 
 export default function WaitingRoom() {
-  const { handleConfigureWaitingArea } = useVideoConferencing();
+  const { initializeLocalMediaTracks } = useVideoConferencing();
   const [showPermissionPopup, setShowPermissionPopup] = useState(true);
   const [hasPermissions, setHasPermissions] = useState(false);
   const params = useParams()
@@ -32,7 +32,7 @@ export default function WaitingRoom() {
 
   useEffect(() => {
     if (hasPermissions) {
-      handleConfigureWaitingArea();
+      initializeLocalMediaTracks();
     }
   }, [hasPermissions]);
 
