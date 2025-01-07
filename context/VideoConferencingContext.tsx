@@ -28,10 +28,6 @@ interface VideoConferencingContextContextType {
   handleConfigureWaitingArea: () => void;
   setLocalUserTrack: any
   cleanupTracks: () => void
-  showPermissionPopup: boolean;
-  hasPermissions: boolean;
-  handleAllowPermissions: () => void;
-  handleDismissPermissions: () => void;
   isScreenSharing: boolean;
   toggleScreenShare: () => Promise<void>;
   screenShareRef: React.RefObject<HTMLDivElement>;
@@ -62,8 +58,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const [roomId, setRoomId] = useState('');
   const [isAudioOn, setIsAudioOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
-  const [showPermissionPopup, setShowPermissionPopup] = useState(true);
-  const [hasPermissions, setHasPermissions] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [joinRoom, setJoinRoom] = useState(false);
   const [stage, setStage] = useState("prepRoom");
@@ -89,28 +83,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     role: "host",
     certificate: "",
   });
-
-  const handleAllowPermissions = async () => {
-    try {
-      await Promise.all([
-        navigator.mediaDevices.getUserMedia({ video: true }),
-        navigator.mediaDevices.getUserMedia({ audio: true })
-      ]);
-
-      setHasPermissions(true);
-      setShowPermissionPopup(false);
-
-      if (hasPermissions) {
-        await handleConfigureWaitingArea()
-      }
-    } catch (error) {
-      console.error('Error getting permissions:', error);
-    }
-  };
-
-  const handleDismissPermissions = () => {
-    setShowPermissionPopup(false);
-  };
 
   const handleConfigureWaitingArea = async () => {
     try {
@@ -550,10 +522,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         handleConfigureWaitingArea,
         setLocalUserTrack,
         cleanupTracks,
-        showPermissionPopup,
-        hasPermissions,
-        handleAllowPermissions,
-        handleDismissPermissions,
         isScreenSharing,
         toggleScreenShare,
         screenShareRef,

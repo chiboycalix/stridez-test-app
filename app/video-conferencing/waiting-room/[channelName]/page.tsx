@@ -1,5 +1,4 @@
 'use client';
-
 import VideoInterface from "../../components/VideoInterface";
 import PermissionModal from "@/app/video-conferencing/components/PermissionModal";
 import { useEffect, useState } from "react";
@@ -23,7 +22,7 @@ export default function WaitingRoom() {
       setHasPermissions(true);
       setShowPermissionPopup(false);
     } catch (error) {
-      console.error('Error getting permissions:', error);
+      console.log('Error getting permissions:', error);
     }
   };
 
