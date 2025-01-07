@@ -9,6 +9,7 @@ import { useVideoConferencing } from '@/context/VideoConferencingContext'
 import { TeamPeople } from '@/public/assets'
 import { Check, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext';
 
 interface Options {
   appid?: string | undefined;
@@ -27,7 +28,7 @@ export default function VideoConferencing() {
   const { setChannelName, channelName } = useVideoConferencing();
   const [handleJoinMeeting, setHandleJoinMeeting] = useState(false)
   const [handleCreateMeeting, setHandleCreateMeeting] = useState(false)
-
+  const { currentUser } = useAuth()
   const handleCreate = () => {
     // router.push(`/video-conferencing/waiting-room?channelName=${channelName}`);
   };
@@ -38,7 +39,7 @@ export default function VideoConferencing() {
 
   const handleJoinWaitingRoom = async () => {
     try {
-      router.push(`/video-conferencing/waiting-room/${channelName}?username=chinonso`);
+      router.push(`/video-conferencing/waiting-room/${channelName}?username=${currentUser?.profile?.firstName}`);
     } catch (error: any) {
       console.error(error);
     }

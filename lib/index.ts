@@ -23,8 +23,8 @@ export const fetchToken = async (
 };
 
 export const agoraGetAppData = async (channel: string) => {
-  const rtcUrl = `https://app.stridez.ca/api/v1/agora/rtcToken`;
-  const rtmUrl = `https://app.stridez.ca/api/v1/agora/rtmToken`;
+  const rtcUrl = `${process.env.NEXT_PUBLIC_BASEURL}/agora/rtcToken`;
+  const rtmUrl = `${process.env.NEXT_PUBLIC_BASEURL}/agora/rtmToken`;
   const data = {
     channelName: channel,
     uid: generateUid(),

@@ -22,6 +22,8 @@ const Sidebar = () => {
   const { currentUser } = useAuth();
   const user = currentUser;
 
+  console.log({ currentUser })
+
   return (
     <>
       {isOpen && (
