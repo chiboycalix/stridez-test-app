@@ -9,6 +9,7 @@ import VolumeControlPopup from './VolumeControlPopup';
 import JoinRequestNotification from './JoinRequestNotification';
 import EndCallScreen from './EndCallScreen';
 import EmojiPopup from './EmojiPopup';
+import VideoGrid from './VideoGrid';
 import { X, Mic, MoreVertical, Copy, Plus, StopCircleIcon, Dot, MicOff, Video, Share, MessageSquare, Menu, Users, Smile, SquareArrowOutUpRight, Send, PinIcon, ChevronRight, VideoOff, MonitorOff } from 'lucide-react';
 import { ChatEmpty } from '@/public/assets';
 import { Button } from '@/components/Button';
@@ -20,7 +21,6 @@ import { useVideoConferencing } from '@/context/VideoConferencingContext';
 import { useSearchParams } from 'next/navigation';
 import { generalHelpers } from '@/helpers';
 import { StreamPlayer } from './StreamPlayer';
-import VideoGrid from './VideoGrid';
 
 type User = {
   id: string;
@@ -380,7 +380,7 @@ const LiveStreamInterface = () => {
   const [volumeAnchorRect, setVolumeAnchorRect] = useState<DOMRect | null>(null);
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [isParticipantListOpen, setIsParticipantListOpen] = useState(false);
-  const { isAudioOn, isVideoOn, remoteUsers, remoteUsersRef, stage, joinRoom, toggleScreenShare, isScreenSharing, toggleAudio, toggleVideo, localUserTrack, handleConfigureWaitingArea, options } = useVideoConferencing();
+  const { isAudioOn, isVideoOn, remoteUsers, remoteUsersRef, toggleScreenShare, isScreenSharing, toggleAudio, toggleVideo, localUserTrack, options } = useVideoConferencing();
 
   const searchParams = useSearchParams();
   const username = searchParams.get("username");
@@ -400,8 +400,6 @@ const LiveStreamInterface = () => {
     remoteUsersRef.current = remoteUsers;
   }, [remoteUsers]);
 
-  console.log({ remoteUsersRef })
-
   const handleAllow = (requesterId: string) => {
     console.log('Allowing user:', requesterId);
     setJoinRequests((requests: any) =>
@@ -415,7 +413,6 @@ const LiveStreamInterface = () => {
       requests.filter((request: any) => request.id !== requesterId)
     );
   };
-
 
   const handleVolumeControlClick = (event: React.MouseEvent<HTMLDivElement>) => {
     const buttonRect = event.currentTarget.getBoundingClientRect();

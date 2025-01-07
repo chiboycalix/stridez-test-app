@@ -1,15 +1,14 @@
 "use client"
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react'
+import Input from '@/components/ui/Input'
 import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion';
+import { UID } from "agora-rtc-react";
 import { Button } from '@/components/Button'
 import { useVideoConferencing } from '@/context/VideoConferencingContext'
 import { TeamPeople } from '@/public/assets'
 import { Check, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import React, { useState } from 'react'
-import Input from '@/components/ui/Input'
-
-import { UID } from "agora-rtc-react";
 
 interface Options {
   appid?: string | undefined;
@@ -77,7 +76,6 @@ export default function VideoConferencing() {
                   className='overflow-hidden w-full rounded-md shadow-lg mt-4 border border-gray-100 absolute top-8 left-0 z-[100]'
                 >
                   <div className='px-4 py-2 bg-white'>
-
                     <div className='flex items-center gap-2 group hover:bg-primary-600 cursor-pointer px-2 py-1 rounded-sm' onClick={handleCreate}>
                       <div className='w-3 h-3 hidden group-hover:inline-block'>
                         <Check className='text-primary group-hover:bg-white w-3 h-3' />

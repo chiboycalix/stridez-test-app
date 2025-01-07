@@ -12,7 +12,6 @@ import {
 } from "agora-rtc-sdk-ng";
 import AgoraRTM, { RtmChannel, RtmClient } from "agora-rtm-sdk";
 import AgoraRTC, { IAgoraRTCClient } from 'agora-rtc-sdk-ng';
-import { useParams } from 'next/navigation';
 
 interface VideoConferencingContextContextType {
   step: number;
@@ -66,7 +65,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const [showPermissionPopup, setShowPermissionPopup] = useState(true);
   const [hasPermissions, setHasPermissions] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const screenShareRef = useRef<HTMLDivElement>(null) as any;
   const [joinRoom, setJoinRoom] = useState(false);
   const [stage, setStage] = useState("prepRoom");
   const [showStepJoinSuccess, setShowStepJoinSuccess] = useState(false);
@@ -75,12 +73,10 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const [remoteUsers, setRemoteUsers] = useState<Record<string, any>>({});
   const [username, setUsername] = useState("")
   const [channelName, setChannelName] = useState("")
-  const remoteUsersRef = useRef(remoteUsers);
-
-  const [localUserTrack, setLocalUserTrack] = useState<ILocalTrack | undefined | any>(
-    undefined
-  );
+  const [localUserTrack, setLocalUserTrack] = useState<ILocalTrack | undefined | any>(undefined);
+  const screenShareRef = useRef<HTMLDivElement>(null) as any;
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteUsersRef = useRef(remoteUsers);
 
   const [options, setOptions] = useState<Options>({
     channel: "",
@@ -393,7 +389,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       mode: "live",
       codec: "vp8",
     });
-    console.log("Initializing RTC client...");
     rtcClient.on("user-published", handleUserPublished);
 
     rtcClient.on("user-unpublished", handleUserUnpublished);
@@ -498,7 +493,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   };
 
   const subscribe = async (user: any, mediaType: "audio" | "video") => {
-    console.log({ user, mediaType }, "subscribesubscribesubscribe")
     await rtcClient.subscribe(user, mediaType);
     const uid = String(user.uid);
     if (mediaType === "video") {
@@ -541,7 +535,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     };
   }, [localUserTrack]);
 
-  console.log({ remoteUsers }, "from context")
   return (
     <VideoConferencingContext.Provider
       value={{

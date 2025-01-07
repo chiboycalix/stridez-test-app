@@ -1,10 +1,10 @@
 'use client';
 
+import VideoInterface from "../../components/VideoInterface";
 import PermissionModal from "@/app/video-conferencing/components/PermissionModal";
 import { useEffect, useState } from "react";
 import { useVideoConferencing } from "@/context/VideoConferencingContext";
 import { useParams, useSearchParams } from "next/navigation";
-import VideoInterface from "../../components/VideoInterface";
 
 export default function WaitingRoom() {
   const { handleConfigureWaitingArea } = useVideoConferencing();
