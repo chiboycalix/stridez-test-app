@@ -10,7 +10,7 @@ import JoinRequestNotification from './JoinRequestNotification';
 import EndCallScreen from './EndCallScreen';
 import EmojiPopup from './EmojiPopup';
 import { X, Mic, MoreVertical, Copy, Plus, StopCircleIcon, Dot, MicOff, Video, Share, MessageSquare, Menu, Users, Smile, SquareArrowOutUpRight, Send, PinIcon, ChevronRight, VideoOff, MonitorOff } from 'lucide-react';
-import { ChatEmpty, LivePhoto } from '@/public/assets';
+import { ChatEmpty } from '@/public/assets';
 import { Button } from '@/components/Button';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,6 +20,7 @@ import { useVideoConferencing } from '@/context/VideoConferencingContext';
 import { useSearchParams } from 'next/navigation';
 import { generalHelpers } from '@/helpers';
 import { StreamPlayer } from './StreamPlayer';
+import VideoGrid from './VideoGrid';
 
 type User = {
   id: string;
@@ -198,8 +199,8 @@ const ChatComponent = ({ onClose }: { onClose: () => void }) => {
           <EmptyState />
         ) : (
           <div className="p-4 space-y-6">
-            {messages.map(message => (
-              <MessageComponent key={message.id} message={message} />
+            {messages.map((message, index) => (
+              <MessageComponent key={index} message={message} />
             ))}
           </div>
         )}
@@ -316,8 +317,8 @@ const InvitePeopleTab = () => {
 
           <div className="space-y-4">
             <div className="space-y-3">
-              {users.map((user) => (
-                <div key={user.id} className="flex items-center justify-between">
+              {users.map((user, index) => (
+                <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gray-200 rounded-full" />
                     <div>
@@ -379,7 +380,7 @@ const LiveStreamInterface = () => {
   const [volumeAnchorRect, setVolumeAnchorRect] = useState<DOMRect | null>(null);
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [isParticipantListOpen, setIsParticipantListOpen] = useState(false);
-  const { isAudioOn, videoRef, setJoinRoom, setStage, remoteUsersRef, isVideoOn, remoteUsers, stage, joinRoom, toggleScreenShare, isScreenSharing, toggleAudio, toggleVideo, localUserTrack, handleConfigureWaitingArea, options } = useVideoConferencing();
+  const { isAudioOn, isVideoOn, remoteUsers, remoteUsersRef, stage, joinRoom, toggleScreenShare, isScreenSharing, toggleAudio, toggleVideo, localUserTrack, handleConfigureWaitingArea, options } = useVideoConferencing();
 
   const searchParams = useSearchParams();
   const username = searchParams.get("username");
@@ -389,23 +390,17 @@ const LiveStreamInterface = () => {
     name: 'Matthew'
   } as any;
 
-
   useEffect(() => {
     if (newRequest) {
       setJoinRequests((requests: any) => [...requests, newRequest]);
     }
   }, []);
 
-  // useEffect(() => {
-  //   remoteUsersRef.current = remoteUsers;
-  // }, [remoteUsers]);
-
-
   useEffect(() => {
-    handleConfigureWaitingArea();
-    setStage("joinRoom")
-    setJoinRoom(true);
-  }, []);
+    remoteUsersRef.current = remoteUsers;
+  }, [remoteUsers]);
+
+  console.log({ remoteUsersRef })
 
   const handleAllow = (requesterId: string) => {
     console.log('Allowing user:', requesterId);
@@ -455,7 +450,6 @@ const LiveStreamInterface = () => {
     console.log('Selected emoji:', emoji);
   };
 
-  console.log({ stage, remoteUsers, joinRoom })
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[150] bg-white">
       <div className="w-full h-full flex flex-col max-w-[1440px] mx-auto p-2 md:p-4 lg:p-6">
@@ -490,78 +484,18 @@ const LiveStreamInterface = () => {
                   <span className="text-xs md:text-sm lg:text-base">{generalHelpers.convertFromSlug(username!)}</span>
                 </div>
 
-                {/* Center - Video */}
+
+                {/* center sidevideo grid */}
                 <div className="flex-1">
-                  <div className="relative h-full">
-                    <StreamPlayer
-                      videoTrack={localUserTrack?.videoTrack || null}
-                      audioTrack={localUserTrack?.audioTrack || null}
-                      uid={options?.uid || ""}
-                    />
-                  </div>
-
-                  <div className="flex-1 p-2 flex items-center justify-center h-full">
-                    {/* <div className={cn(
-                      "h-full overflow-y-auto",
-                      "p-2 md:p-0 place-content-center"
-                    )}>
-                      <div className={cn(
-                        "grid gap-4 place-content-center",
-                        "grid-cols-1 auto-rows-[300px]",
-                        "md:grid-cols-2 md:auto-rows-[250px]",
-                        mainGridParticipants.length === 1 && "lg:grid-cols-1",
-                        mainGridParticipants.length === 2 && "lg:grid-cols-2",
-                        mainGridParticipants.length >= 3 && "lg:grid-cols-3",
-                        "lg:auto-rows-[200px]",
-                        "place-items-center"
-                      )}>
-                        {mainGridParticipants.map(participant => (
-                          <ParticipantVideo
-                            key={participant.id}
-                            participant={participant}
-                            className="w-full h-full"
-                          />
-                        ))}
-                      </div>
-                    </div> */}
-
-
-                    {/* Remote Stream */}
-                    <section className="border rounded shadow-md w-full lg:w-1/2">
-                      {
-                        joinRoom && remoteUsers &&
-                        Object.keys(remoteUsers).map((uid) => {
-                          const user = remoteUsers[uid];
-                          console.log("remote user", user);
-                          if (
-                            user.videoTrack
-                          ) {
-                            return (
-                              <>
-                                <div className="p-4">
-                                  <div
-                                    id="remote-playerlist"
-                                    className="min-h-[220px] w-full"
-                                  >
-                                    <div className="bg-gray-100 text-gray-700 font-semibold px-2 py-2 border-b">
-                                      Remote Stream
-                                    </div>
-                                    <StreamPlayer
-                                      key={uid}
-                                      videoTrack={user.videoTrack || undefined}
-                                      audioTrack={user.audioTrack || undefined}
-                                      // screenTrack={user.screenTrack || undefined}
-                                      uid={uid}
-                                    />
-                                  </div>
-                                </div>
-                              </>
-                            );
-                          }
-                          return null;
-                        })}
-                    </section>
-                  </div>
+                  <VideoGrid
+                    localUser={{
+                      videoTrack: localUserTrack?.videoTrack,
+                      audioTrack: localUserTrack?.audioTrack,
+                      uid: options?.uid
+                    }}
+                    remoteUsers={remoteUsers}
+                    StreamPlayer={StreamPlayer}
+                  />
                 </div>
 
                 {/* Right Side */}
@@ -585,7 +519,6 @@ const LiveStreamInterface = () => {
                   </div>
                 </div>
               </div>
-
 
               <AnimatePresence>
                 {showChat && (
@@ -631,9 +564,9 @@ const LiveStreamInterface = () => {
         </div>
 
         {/* Request to Join Call */}
-        {joinRequests.map(request => (
+        {joinRequests.map((request, index) => (
           <JoinRequestNotification
-            key={request.id}
+            key={index}
             requesterName={request.name}
             onAllow={() => handleAllow(request.id)}
             onDeny={() => handleDeny(request.id)}

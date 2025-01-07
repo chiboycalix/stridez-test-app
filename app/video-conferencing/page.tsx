@@ -25,7 +25,7 @@ interface Options {
 
 export default function VideoConferencing() {
   const router = useRouter();
-  const { setStage, setChannelName, channelName, setUsername, username } = useVideoConferencing();
+  const { setChannelName, channelName } = useVideoConferencing();
   const [handleJoinMeeting, setHandleJoinMeeting] = useState(false)
   const [handleCreateMeeting, setHandleCreateMeeting] = useState(false)
 
@@ -39,7 +39,7 @@ export default function VideoConferencing() {
 
   const handleJoinWaitingRoom = async () => {
     try {
-      router.push(`/video-conferencing/waiting-room/${channelName}`);
+      router.push(`/video-conferencing/waiting-room/${channelName}?username=chinonso`);
     } catch (error: any) {
       console.error(error);
     }

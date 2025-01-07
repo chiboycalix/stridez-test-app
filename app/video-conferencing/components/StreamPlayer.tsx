@@ -21,7 +21,7 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
   options = {}
 }) => {
 
-  const { videoRef, isVideoOn } = useVideoConferencing();
+  const { videoRef, isVideoOn, remoteUsersRef } = useVideoConferencing();
 
   useEffect(() => {
     if (videoTrack && videoRef.current && isVideoOn) {

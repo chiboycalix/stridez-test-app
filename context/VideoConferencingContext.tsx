@@ -75,10 +75,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const [remoteUsers, setRemoteUsers] = useState<Record<string, any>>({});
   const [username, setUsername] = useState("")
   const [channelName, setChannelName] = useState("")
-  const params = useParams()
   const remoteUsersRef = useRef(remoteUsers);
-
-  const chan = params.channelName
 
   const [localUserTrack, setLocalUserTrack] = useState<ILocalTrack | undefined | any>(
     undefined
@@ -304,7 +301,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   };
 
   useEffect(() => {
-    if (chan && username) {
+    if (channelName && username) {
       const fetchAgoraData = async () => {
         try {
           const { rtcOptions, rtmOptions } = await agoraGetAppData(channelName);
@@ -326,7 +323,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       fetchAgoraData();
       setJoinDisabled(false);
     }
-  }, [channelName, username, chan]);
+  }, [channelName, username]);
 
   const handleMemberJoined = async (MemberId: string) => {
     const { name, userRtcUid, userAvatar } =
@@ -339,7 +336,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   const initRtm = async (name: string) => {
     rtmClient = AgoraRTM.createInstance(options.appid!);
-    console.log("checking for error before...", rtmClient);
     await rtmClient.login({
       uid: String(options.uid!),
       token: options.rtmToken!,
@@ -353,9 +349,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     await rtmClient.addOrUpdateLocalUserAttributes({
       name: name,
       userRtcUid: String(options.uid!),
-      // userAvatar: avatar,
     });
-
     getChannelMembers();
 
     window.addEventListener("beforeunload", leaveRtmChannel);
@@ -394,26 +388,14 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     subscribe(user, mediaType);
   };
 
-  const handleUserUnpublished = (user: any, mediaType: "audio" | "video") => {
-    console.log("Checking if this event was called.........", remoteUsers);
-
-    const uid = String(user.uid);
-    setRemoteUsers((prevUsers) => ({
-      ...prevUsers,
-      [uid]: {
-        ...prevUsers[uid],
-        [mediaType]: null, // Indicate muted state
-      },
-    }));
-  };
-
   const join = async () => {
-    console.log("I have joined")
     rtcClient = AgoraRTC.createClient({
       mode: "live",
       codec: "vp8",
     });
+    console.log("Initializing RTC client...");
     rtcClient.on("user-published", handleUserPublished);
+
     rtcClient.on("user-unpublished", handleUserUnpublished);
     rtcClient.on("user-left", handleUserLeft);
 
@@ -422,6 +404,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     if (mode !== 0 && !isNaN(parseInt(mode))) {
       rtcClient.startProxyServer(parseInt(mode));
     }
+
     if (options?.role === "audience") {
       rtcClient.setClientRole(options.role, { level: options.audienceLatency });
     } else if (options.role === "host") {
@@ -434,8 +417,20 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       options.rtcToken || null,
       options.uid || null
     );
-
     await initRtm(username!);
+  };
+
+  const handleUserUnpublished = (user: any, mediaType: "audio" | "video") => {
+    console.log("Checking if this event was called.........", remoteUsers);
+
+    const uid = String(user.uid);
+    setRemoteUsers((prevUsers) => ({
+      ...prevUsers,
+      [uid]: {
+        ...prevUsers[uid],
+        [mediaType]: null,
+      },
+    }));
   };
 
   const createTrackAndPublish = async () => {
@@ -503,8 +498,8 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   };
 
   const subscribe = async (user: any, mediaType: "audio" | "video") => {
-    await rtcClient.subscribe(user, mediaType);
     console.log({ user, mediaType }, "subscribesubscribesubscribe")
+    await rtcClient.subscribe(user, mediaType);
     const uid = String(user.uid);
     if (mediaType === "video") {
       const videoTrack = user.videoTrack;
@@ -546,7 +541,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     };
   }, [localUserTrack]);
 
-  console.log({ remoteUsers }, "From context")
+  console.log({ remoteUsers }, "from context")
   return (
     <VideoConferencingContext.Provider
       value={{

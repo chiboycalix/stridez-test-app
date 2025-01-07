@@ -3,7 +3,7 @@
 import PermissionModal from "@/app/video-conferencing/components/PermissionModal";
 import { useEffect, useState } from "react";
 import { useVideoConferencing } from "@/context/VideoConferencingContext";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import VideoInterface from "../../components/VideoInterface";
 
 export default function WaitingRoom() {
@@ -11,6 +11,8 @@ export default function WaitingRoom() {
   const [showPermissionPopup, setShowPermissionPopup] = useState(true);
   const [hasPermissions, setHasPermissions] = useState(false);
   const params = useParams()
+  const searchParams = useSearchParams();
+  const username = searchParams.get("username");
 
   const handleAllowPermissions = async () => {
     try {
@@ -47,6 +49,7 @@ export default function WaitingRoom() {
       <VideoInterface
         allowMicrophoneAndCamera={hasPermissions}
         channelName={params.channelName! as string}
+        username={username!}
       />
       <div className="h-[18vh]">
 
